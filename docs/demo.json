@@ -1,0 +1,277 @@
+[
+ {
+  "t": 0.3,
+  "piece": 1,
+  "part": "intro",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "Fmaj9",
+   "Gmaj7"
+  ]
+ },
+ {
+  "t": 6.5,
+  "piece": 1,
+  "part": "A",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "Fmaj9",
+   "Fmaj9",
+   "Gmaj7",
+   "Gmaj7",
+   "Fmaj9",
+   "Fmaj9",
+   "Gmaj7",
+   "Gmaj7"
+  ]
+ },
+ {
+  "t": 31.5,
+  "piece": 1,
+  "part": "A'",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "Fmaj7(#11)",
+   "Gmaj7",
+   "Fmaj7",
+   "Gmaj7",
+   "Fmaj7",
+   "Gmaj9",
+   "Fmaj7(#11)",
+   "Gmaj7"
+  ]
+ },
+ {
+  "t": 56.2,
+  "piece": 1,
+  "part": "B",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "B♭maj9",
+   "C9",
+   "Am9",
+   "Dm7",
+   "B♭add9",
+   "C9sus4",
+   "Am7",
+   "Dm9"
+  ]
+ },
+ {
+  "t": 81.1,
+  "piece": 1,
+  "part": "A'",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "Fmaj9",
+   "Gmaj7",
+   "Fmaj7(#11)",
+   "Gmaj7",
+   "Fmaj7",
+   "Gmaj9",
+   "Fmaj9",
+   "Fmaj9"
+  ]
+ },
+ {
+  "t": 105.8,
+  "piece": 1,
+  "part": "outro",
+  "key": "F major",
+  "meter": 3,
+  "bpm": 59,
+  "chords": [
+   "B♭maj7",
+   "Fmaj7",
+   "F"
+  ]
+ },
+ {
+  "t": 120.3,
+  "piece": 2,
+  "part": "intro",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "A♭maj9",
+   "A♭maj9",
+   "Fm9",
+   "Fm9"
+  ]
+ },
+ {
+  "t": 131.5,
+  "piece": 2,
+  "part": "A",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "A♭maj7(#11)",
+   "A♭maj7(#11)",
+   "Fm9",
+   "Fm9",
+   "B♭m9",
+   "B♭m9",
+   "E♭sus4",
+   "E♭sus4"
+  ]
+ },
+ {
+  "t": 153.9,
+  "piece": 2,
+  "part": "A'",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "A♭maj9",
+   "A♭maj9",
+   "Fm9",
+   "Fm9",
+   "B♭m9",
+   "B♭m9",
+   "E♭sus4",
+   "E♭sus4"
+  ]
+ },
+ {
+  "t": 176.6,
+  "piece": 2,
+  "part": "B",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "Cm9",
+   "D♭maj9",
+   "Cm9",
+   "B♭m7",
+   "Cm9",
+   "D♭maj9",
+   "Cm9",
+   "B♭m(add9)"
+  ]
+ },
+ {
+  "t": 199.0,
+  "piece": 2,
+  "part": "A'",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "A♭maj9",
+   "A♭maj9",
+   "Fm11",
+   "Fm11",
+   "B♭m9",
+   "B♭m9",
+   "A♭6/9",
+   "A♭6/9"
+  ]
+ },
+ {
+  "t": 221.5,
+  "piece": 2,
+  "part": "outro",
+  "key": "A♭ major",
+  "meter": 3,
+  "bpm": 64,
+  "chords": [
+   "D♭maj7(#11)",
+   "A♭maj7",
+   "A♭maj9"
+  ]
+ },
+ {
+  "t": 234.5,
+  "piece": 3,
+  "part": "intro",
+  "key": "C minor",
+  "meter": 4,
+  "bpm": 60,
+  "chords": [
+   "A♭maj9",
+   "A♭maj9"
+  ]
+ },
+ {
+  "t": 242.5,
+  "piece": 3,
+  "part": "A",
+  "key": "C minor",
+  "meter": 4,
+  "bpm": 60,
+  "chords": [
+   "A♭maj7",
+   "A♭maj7",
+   "Gm11",
+   "Gm11",
+   "Fm9",
+   "Fm9",
+   "Cm11",
+   "Cm11"
+  ]
+ },
+ {
+  "t": 274.3,
+  "piece": 3,
+  "part": "B",
+  "key": "F minor",
+  "meter": 4,
+  "bpm": 60,
+  "chords": [
+   "B♭m11",
+   "C7sus4",
+   "Fm11",
+   "Fm11",
+   "B♭m11",
+   "C9sus4",
+   "Fm11",
+   "Fm11"
+  ]
+ },
+ {
+  "t": 306.0,
+  "piece": 3,
+  "part": "A'",
+  "key": "C minor",
+  "meter": 4,
+  "bpm": 60,
+  "chords": [
+   "A♭maj7",
+   "A♭maj7",
+   "Gm(add9)",
+   "Gm(add9)",
+   "Fm7",
+   "Fm7",
+   "Cm9",
+   "Cm9"
+  ]
+ },
+ {
+  "t": 337.8,
+  "piece": 3,
+  "part": "outro",
+  "key": "C minor",
+  "meter": 4,
+  "bpm": 60,
+  "chords": [
+   "Fm9",
+   "Cm9",
+   "Cm9"
+  ]
+ }
+]

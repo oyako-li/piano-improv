@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pianoimprov"
+version = "0.1.0"
+description = "落ち着いて優雅なピアノをずっと即興で弾き続け、聴き手の好みを学ぶ AI"
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "oyako-li"}]
+requires-python = ">=3.11"
+dependencies = ["tinysoundfont>=0.3", "mido>=1.3", "numpy>=1.26"]
+
+[project.urls]
+Homepage = "https://github.com/oyako-li/piano-improv"
+Demo = "https://oyako-li.github.io/piano-improv/"
+
+[project.scripts]
+piano = "pianoimprov.cli:main"
+
+[tool.setuptools]
+packages = ["pianoimprov"]
+
+[tool.setuptools.package-data]
+pianoimprov = ["web/*.html"]

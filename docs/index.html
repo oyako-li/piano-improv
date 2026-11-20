@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Piano Improv — 試聴</title>
+<meta name="description" content="落ち着いて優雅なピアノをずっと即興で弾き続け、聴き手の好みを学ぶ AI。そのデモ演奏 3 曲。">
+<meta property="og:title" content="Piano Improv — 試聴">
+<meta property="og:description" content="印象派と日本の映画音楽のあいだで、ずっと即興で弾き続けるピアノの AI。デモ演奏 3 曲。">
+<meta property="og:image" content="https://oyako-li.github.io/piano-improv/screen.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='1.5' fill='%237a5a3c'/%3E%3Cg fill='%23fbf8f3'%3E%3Crect x='2.5' y='4.5' width='2' height='7'/%3E%3Crect x='5.5' y='4.5' width='2' height='7'/%3E%3Crect x='8.5' y='4.5' width='2' height='7'/%3E%3Crect x='11.5' y='4.5' width='2' height='7'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#f5f2ee;--card:#fdfbf8;--text:#2b2420;--muted:#8a7d72;--line:#e4dcd3;--accent:#7a5a3c;--chip:#efe7de;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#1a1714;--card:#231f1b;--text:#eae3da;--muted:#a3968a;--line:#3a332c;--accent:#c9a27a;--chip:#2f2924;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.7 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+main{max-width:760px;margin:0 auto;padding:48px 16px 64px}
+h1{font-family:var(--serif);font-weight:400;font-size:34px;letter-spacing:.08em;margin:0}
+.lead{color:var(--muted);margin:8px 0 28px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
+.now{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.now .title{font-family:var(--serif);font-size:24px}
+.now .meta{color:var(--muted)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 18px;min-height:30px}
+.chip{border:1px solid var(--line);border-radius:999px;padding:2px 11px;font-size:14px;color:var(--muted);transition:all .2s}
+.chip.on{background:var(--chip);border-color:var(--accent);color:var(--text)}
+.player{display:flex;align-items:center;gap:14px}
+#play{width:52px;height:52px;border-radius:50%;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:18px;cursor:pointer;flex:none}
+#play:hover{background:var(--chip)}
+.track{flex:1;min-width:0}
+.bar{position:relative;height:28px;cursor:pointer}
+.bar .rail{position:absolute;left:0;right:0;top:12px;height:4px;background:var(--line);border-radius:2px}
+.bar .fill{position:absolute;left:0;top:12px;height:4px;background:var(--accent);border-radius:2px;width:0}
+.bar .mark{position:absolute;top:6px;width:1px;height:16px;background:var(--muted);opacity:.6}
+.time{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+.pieces{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:8px}
+.pieces button{width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;gap:12px;align-items:baseline}
+.pieces button:hover{border-color:var(--accent)}
+.pieces button.on{border-color:var(--accent);background:var(--chip)}
+.pieces .n{font-family:var(--serif);font-size:18px}
+.pieces .d{color:var(--muted);font-size:13px}
+.pieces .at{margin-left:auto;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
+h2{font-family:var(--serif);font-weight:400;font-size:20px;margin:40px 0 8px}
+p,li{color:var(--text)}
+ul.feat{padding-left:1.2em}
+a{color:var(--accent)}
+.shot{width:100%;border-radius:10px;border:1px solid var(--line);margin-top:8px}
+.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.links a{border:1px solid var(--accent);border-radius:8px;padding:6px 14px;text-decoration:none}
+footer{margin-top:40px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<main>
+  <h1>Piano Improv</h1>
+  <p class="lead">落ち着いて優雅なピアノを、ずっと即興で弾き続ける AI。<br>聴きながら「いい」「微妙」と伝えると、だんだん好みに寄っていきます。</p>
+
+  <section class="card" aria-label="デモ演奏">
+    <div class="now"><span class="title" id="title">デモ演奏 3 曲</span><span class="meta" id="meta">初期設定のまま・約 6 分</span></div>
+    <div class="chips" id="chips"></div>
+    <div class="player">
+      <button id="play" aria-label="再生">▶</button>
+      <div class="track">
+        <div class="bar" id="bar"><div class="rail"></div><div class="fill" id="fill"></div></div>
+        <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
+      </div>
+    </div>
+    <ul class="pieces" id="pieces"></ul>
+    <audio id="audio" src="demo.mp3" preload="metadata"></audio>
+  </section>
+
+  <h2>これは何か</h2>
+  <ul class="feat">
+    <li>印象派（サティ・ドビュッシー的な平行和音・揺れる maj7）と、日本の映画音楽系（王道進行・カノン風の下降バス・ヨナ抜き）のあいだで、曲を次々に作って弾き続けます</li>
+    <li>好みは、テンポ・余白・和音の色彩・短調の多さなど 15 個の値。少しずつずらしながら弾き、「いい」と言われた方へ寄せていきます</li>
+    <li>言葉（「もっと静かに」「雨の夜っぽく」）や、好きな曲の MIDI でも教えられます</li>
+    <li>作曲は音楽理論のルールと乱数。GPU はいりません。音は Salamander Grand Piano</li>
+  </ul>
+  <p>このページの 3 曲は、まだ何も教えていない初期設定で弾いたものです。自分の PC で動かすと、ブラウザの操作画面から評価や言葉の指示ができます。</p>
+  <img class="shot" src="screen.jpg" alt="操作画面：いまの曲・和音・評価ボタン・言葉の指示・好みのスライダー" loading="lazy">
+  <div class="links">
+    <a href="https://github.com/oyako-li/piano-improv">GitHub で見る・動かす</a>
+    <a href="demo.mid" download>この 3 曲の MIDI</a>
+  </div>
+
+  <footer>
+    ピアノの音：Salamander Grand Piano（Alexander Holm, CC BY 3.0）・プログラム：MIT License
+  </footer>
+</main>
+<script>
+const $ = s => document.querySelector(s);
+const audio = $("#audio");
+const fmt = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const PART = {intro: "イントロ", A: "A", "A'": "A′", B: "B", outro: "アウトロ"};
+let secs = [], pieces = [], cur = -1;
+
+function sectionAt(t) {
+  let i = -1;
+  for (let k = 0; k < secs.length; k++) if (secs[k].t <= t) i = k;
+  return i;
+}
+function show(i) {
+  if (i === cur) return;
+  cur = i;
+  const s = secs[i];
+  if (!s) return;
+  $("#title").textContent = `曲 ${s.piece} ・ ${PART[s.part] ?? s.part}`;
+  $("#meta").textContent = `${s.key} ・ ${s.meter}/4 ・ ♩=${s.bpm}`;
+  $("#chips").innerHTML = s.chords.map(c => `<span class="chip">${esc(c)}</span>`).join("");
+  document.querySelectorAll(".pieces button").forEach(b => b.classList.toggle("on", +b.dataset.piece === s.piece));
+}
+function chordTick(t) {
+  const s = secs[cur];
+  if (!s) return;
+  const end = secs[cur + 1]?.t ?? audio.duration;
+  const k = Math.min(s.chords.length - 1, Math.floor((t - s.t) / ((end - s.t) / s.chords.length)));
+  document.querySelectorAll("#chips .chip").forEach((c, j) => c.classList.toggle("on", j === k));
+}
+function tick() {
+  const t = audio.currentTime, d = audio.duration || 0;
+  $("#cur").textContent = fmt(t);
+  $("#fill").style.width = d ? `${t / d * 100}%` : 0;
+  show(Math.max(0, sectionAt(t)));
+  chordTick(t);
+}
+function marks() {
+  const d = audio.duration;
+  if (!d) return;
+  $("#dur").textContent = fmt(d);
+  $("#bar").querySelectorAll(".mark").forEach(m => m.remove());
+  for (const p of pieces.slice(1)) {
+    const m = document.createElement("div");
+    m.className = "mark"; m.style.left = `${p.t / d * 100}%`;
+    $("#bar").appendChild(m);
+  }
+}
+
+fetch("demo.json").then(r => r.json()).then(j => {
+  secs = j;
+  for (const s of secs) if (!pieces.some(p => p.piece === s.piece)) pieces.push({piece: s.piece, t: s.t, key: s.key, meter: s.meter, bpm: s.bpm});
+  $("#pieces").innerHTML = pieces.map(p => `<li><button data-piece="${p.piece}" data-t="${p.t}">
+    <span class="n">曲 ${p.piece}</span><span class="d">${esc(p.key)} ・ ${p.meter}/4 ・ ♩=${p.bpm}</span><span class="at">${fmt(p.t)}</span></button></li>`).join("");
+  document.querySelectorAll(".pieces button").forEach(b => b.onclick = () => { audio.currentTime = +b.dataset.t; audio.play(); });
+  marks();
+});
+
+$("#play").onclick = () => audio.paused ? audio.play() : audio.pause();
+audio.onplay = () => { $("#play").textContent = "❚❚"; $("#play").setAttribute("aria-label", "一時停止"); };
+audio.onpause = () => { $("#play").textContent = "▶"; $("#play").setAttribute("aria-label", "再生"); };
+audio.ontimeupdate = tick;
+audio.onloadedmetadata = marks;
+$("#bar").onclick = e => {
+  const r = e.currentTarget.getBoundingClientRect();
+  if (audio.duration) audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
+};
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && e.target === document.body) { e.preventDefault(); $("#play").click(); }
+});
+</script>
+</body>
+</html>

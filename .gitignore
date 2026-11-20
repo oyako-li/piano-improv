@@ -1,0 +1,7 @@
+assets/
+.venv/
+data/
+__pycache__/
+*.wav
+*.egg-info/
+samples/
