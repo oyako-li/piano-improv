@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Piano Improv</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='1.5' fill='%230b2236'/%3E%3Cg fill='%238fd3ff'%3E%3Crect x='2.5' y='4.5' width='2' height='7'/%3E%3Crect x='5.5' y='4.5' width='2' height='7'/%3E%3Crect x='8.5' y='4.5' width='2' height='7'/%3E%3Crect x='11.5' y='4.5' width='2' height='7'/%3E%3C/g%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#060b12;--panel:#0c1520;--panel2:#111d2b;--ink:#e3eef6;--muted:#7f95a8;--line:rgba(150,200,235,.14);
+  --accent:#8fd3ff;--accent2:#c9b6ff;--warm:#ffd9a8;--bad:#ff9a8f;
+  --serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",Georgia,serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+/* 上の帯 */
+.top{display:flex;align-items:center;gap:14px;padding:16px 0 14px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#14314a,#0a1826);border:1px solid var(--line);display:grid;place-items:center}
+.brand b{white-space:nowrap;font-family:var(--serif);font-weight:400;font-size:20px;letter-spacing:.1em}
+.brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;margin-top:-2px}
+.spacer{flex:1}
+.onair{white-space:nowrap;display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:14px;border:1px solid rgba(143,211,255,.45);color:var(--accent);font:600 12px var(--mono);letter-spacing:.12em}
+.onair i{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);animation:pulse 2.4s ease-in-out infinite}
+.onair.off{border-color:var(--line);color:var(--muted)}.onair.off i{background:var(--muted);box-shadow:none;animation:none}
+@keyframes pulse{50%{opacity:.35}}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:15px;border:1px solid var(--line);background:var(--panel);font-size:12px;text-decoration:none;cursor:pointer}
+.pill:hover{border-color:rgba(150,200,235,.4)}
+/* 舞台 */
+.stage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#061321;border:1px solid var(--line)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.corner{position:absolute;width:34px;height:34px;border:2px solid rgba(143,211,255,.55);pointer-events:none}
+.corner.tl{top:14px;left:14px;border-right:0;border-bottom:0}.corner.tr{top:14px;right:14px;border-left:0;border-bottom:0}
+.corner.bl{bottom:14px;left:14px;border-right:0;border-top:0}.corner.br{bottom:14px;right:14px;border-left:0;border-top:0}
+.live{position:absolute;top:24px;left:30px;font:600 12px var(--mono);letter-spacing:.18em;color:var(--ink);display:flex;align-items:center;gap:7px;text-shadow:0 1px 6px #000}
+.live i{width:7px;height:7px;border-radius:50%;background:#ff6b81;box-shadow:0 0 8px #ff6b81}
+.live.off i{background:var(--muted);box-shadow:none}
+.caster{position:absolute;right:30px;bottom:22px;font-size:12px;color:rgba(227,238,246,.75);text-shadow:0 1px 6px #000}
+.start{position:absolute;inset:0;display:grid;place-items:start center;padding-top:14%;background:radial-gradient(ellipse at center,rgba(3,9,16,.15),rgba(3,9,16,.55));cursor:pointer;border:0;width:100%}
+.start[hidden]{display:none}
+.start span{display:inline-flex;align-items:center;gap:12px;font-family:var(--serif);font-size:20px;letter-spacing:.14em;border:1px solid rgba(143,211,255,.4);background:rgba(8,22,36,.6);border-radius:40px;padding:14px 30px;backdrop-filter:blur(6px)}
+.toast{position:absolute;top:22px;left:50%;transform:translate(-50%,-6px);background:rgba(8,22,36,.7);border:1px solid var(--line);border-radius:18px;padding:6px 16px;font-size:13px;opacity:0;transition:all .5s;pointer-events:none;backdrop-filter:blur(6px)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.err{position:absolute;left:16px;right:16px;bottom:56px;color:#ffb4a8;font-size:13px;text-align:center}
+.stage:fullscreen{border-radius:0;border:0;aspect-ratio:auto}
+/* 字幕のような帯：いまの曲 */
+.caption{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px;min-height:40px}
+.caption .now{white-space:nowrap}
+.caption .t{font-family:var(--serif);font-size:20px;letter-spacing:.08em}
+.caption .m{color:var(--muted);font-size:12px;margin-left:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12px;padding:2px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);transition:all .25s}
+.chip.on{color:var(--ink);border-color:rgba(143,211,255,.6);background:rgba(20,50,72,.75)}
+/* プレーヤーの帯 */
+.player{display:flex;align-items:center;gap:12px;margin-top:12px}
+.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#06121e;display:grid;place-items:center;cursor:pointer;flex:none}
+.play:hover{filter:brightness(1.08)}
+.vol{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.vol input{width:80px;accent-color:var(--accent)}
+.prog{flex:1;min-width:120px}
+.prog .parts{display:flex;gap:3px;height:6px}
+.prog .parts span{flex:1;border-radius:3px;background:rgba(150,200,235,.14);position:relative;overflow:hidden}
+.prog .parts span.done{background:rgba(143,211,255,.45)}
+.prog .parts span i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:3px}
+.prog .lbl{display:flex;justify-content:space-between;color:var(--muted);font:11px var(--mono);margin-top:6px}
+.rate{display:flex;gap:6px}
+.rate button{height:36px;padding:0 14px;border-radius:18px;border:1px solid var(--line);background:var(--panel);cursor:pointer;font-size:13px}
+.rate button:hover{border-color:rgba(150,200,235,.45)}
+.rate .good{border-color:rgba(255,217,168,.4);color:var(--warm)}
+.rate .bad{color:var(--bad)}
+.icon{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;color:var(--muted)}
+.icon:hover{color:var(--ink);border-color:rgba(150,200,235,.45)}
+/* 弾き手と、できごと */
+.who{display:flex;align-items:center;gap:14px;margin-top:22px;padding:16px 0;border-top:1px solid var(--line)}
+.who .av{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b5878,#0b1a28);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--serif);font-size:18px}
+.who b{font-size:15px}
+.who .d{color:var(--muted);font-size:12px}
+.grid{display:grid;grid-template-columns:1fr 300px;gap:24px;padding-bottom:48px}
+.grid h3{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin:0 0 10px}
+.log{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.log li{display:flex;gap:10px;font-size:13px;padding:8px 12px;border-radius:10px;background:var(--panel)}
+.log time{color:var(--muted);font:11px var(--mono);padding-top:2px;flex:none}
+.taste{display:grid;gap:8px;background:var(--panel);border-radius:12px;padding:14px}
+.taste .row{display:grid;grid-template-columns:112px 1fr;white-space:nowrap;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.taste .bar{height:4px;border-radius:2px;background:rgba(150,200,235,.12);position:relative}
+.taste .bar i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent2);transform:translateX(-50%)}
+.taste .n{color:var(--muted);font-size:12px;margin-top:4px}
+.keys{color:var(--muted);font-size:12px;margin-top:10px}
+kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+@media (max-width:760px){
+  .wrap{padding:0 12px}
+  .stage{aspect-ratio:4/5}
+  .caption .chips{display:none}
+  .player{flex-wrap:wrap}
+  .vol{display:none}
+  .prog{order:5;flex-basis:100%}
+  .grid{grid-template-columns:1fr}
+  .corner,.caster,.keys,.brand small{display:none}
+  .onair{padding:0 9px}
+  .brand b{font-size:17px;letter-spacing:.06em}
+  .top{gap:8px}
+}
+</style>
+<script type="importmap">
+{"imports": {"three": "/vendor/three/three.module.min.js", "three/addons/": "/vendor/three/addons/", "@pixiv/three-vrm": "/vendor/three-vrm/three-vrm.module.min.js"}}
+</script>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="/character">
+      <span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8fd3ff" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v9M12 5v9M16 5v9" /><path d="M7 5v6M11 5v6M15 5v6M19 5v6" stroke-width="2.6" stroke="#0a1826"/></svg></span>
+      <span><b>Piano Improv</b><small>あなたのために、ずっと即興で</small></span>
+    </a>
+    <span class="spacer"></span>
+    <span class="onair off" id="onair"><i></i><span id="onairText">STANDBY</span></span>
+    <a class="pill" href="/" title="好みのスライダー・言葉の指示・保存">操作画面</a>
+  </header>
+
+  <section class="stage" id="stage">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="live off" id="live"><i></i>LIVE</div>
+    <div class="caster" id="caster">演奏：…</div>
+    <button class="start" id="start" aria-label="聴く"><span>▶ 聴く</span></button>
+    <div class="toast" id="msg"></div>
+    <div class="err" id="err"></div>
+  </section>
+  <div class="caption">
+    <div class="now"><span class="t" id="title">Piano Improv</span><span class="m" id="meta">読み込み中…</span></div>
+    <div class="chips" id="chips"></div>
+  </div>
+
+  <div class="player">
+    <button class="play" id="play" aria-label="聴く"><svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <label class="vol" title="音量"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 4V6L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input type="range" id="vol" min="0" max="1" step="0.01" value="1"></label>
+    <div class="prog"><div class="parts" id="parts"></div><div class="lbl"><span id="partLbl">—</span><span id="tc">00:00:00</span></div></div>
+    <div class="rate">
+      <button class="bad" id="bad" title="微妙（-）">微妙</button>
+      <button class="good" id="good" title="いい（+）">♡ いい</button>
+    </div>
+    <button class="icon" id="next" title="次の曲（n）" aria-label="次の曲"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l10-7zM17 5h2v14h-2z"/></svg></button>
+    <button class="icon" id="shot" title="この場面を画像で保存" aria-label="画像で保存"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
+    <button class="icon" id="full" title="全画面" aria-label="全画面"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+
+  <div class="who">
+    <div class="av" id="avatar">♪</div>
+    <div><b id="whoName">…</b><div class="d">あなたの好みを覚えながら、ずっと即興で弾いています</div></div>
+    <span class="spacer"></span>
+    <a class="pill" href="https://github.com/oyako-li/piano-improv" target="_blank" rel="noopener">しくみ</a>
+  </div>
+
+  <div class="grid">
+    <section><h3>できごと</h3><ul class="log" id="log"></ul></section>
+    <section><h3>覚えたこと</h3><div class="taste" id="taste"></div>
+      <div class="keys"><kbd>+</kbd> いい ・ <kbd>-</kbd> 微妙 ・ <kbd>n</kbd> 次の曲 ・ <kbd>Space</kbd> 聴く/止める ・ <kbd>f</kbd> 全画面</div>
+    </section>
+  </div>
+</div>
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { VRMLoaderPlugin, VRMUtils } from "@pixiv/three-vrm";
+
+const $ = s => document.querySelector(s);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, k) => a + (b - a) * k;
+
+/* ================================================================ 時刻（いま聞こえている音） */
+const audio = new Audio();
+audio.preload = "none";
+let listening = false, streamStart = 0;
+let st = null, stAt = 0;                       // 最後の状態と、受け取った時刻
+function heard() {
+  if (listening && audio.currentTime > 0) return streamStart + audio.currentTime;
+  if (st) return st.now + (performance.now() - stAt) / 1000;   // 聴いていないときはサーバーの時計
+  return 0;
+}
+const PLAY = '<path d="M7 4.5v15l13-7.5z"/>', PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+async function startListening() {
+  try {
+    const s = await (await fetch("/api/state")).json();
+    streamStart = s.generated;
+    audio.src = `/stream?${Date.now()}`;
+    await audio.play();
+    listening = true;
+    $("#start").hidden = true;
+    $("#playIcon").innerHTML = PAUSE; $("#play").setAttribute("aria-label", "止める");
+    $("#err").textContent = "";
+  } catch (e) { $("#err").textContent = `再生できませんでした: ${e.message}`; }
+}
+function stopListening() {
+  listening = false; audio.pause(); audio.removeAttribute("src"); audio.load();
+  $("#playIcon").innerHTML = PLAY; $("#play").setAttribute("aria-label", "聴く");
+}
+const toggleListening = () => listening ? stopListening() : startListening();
+$("#start").onclick = startListening;
+$("#play").onclick = toggleListening;
+$("#vol").oninput = e => { audio.volume = +e.target.value; };
+audio.onerror = () => { if (listening) { listening = false; setTimeout(startListening, 1500); } };
+
+/* ================================================================ 状態（SSE） */
+let lastVersion = -1, lastMsgT = 0;
+const es = new EventSource("/api/events");
+es.onmessage = ev => {
+  st = JSON.parse(ev.data); stAt = performance.now();
+  for (const m of st.messages) {
+    if (m.t <= lastMsgT) continue;
+    lastMsgT = m.t;
+    if (lastVersion >= 0) react(m);
+  }
+  lastVersion = st.version;
+  renderSide();
+};
+const KIND = { rate: "評価", words: "言葉", save: "保存", warn: "", info: "" };
+function renderSide() {
+  $("#log").innerHTML = st.messages.slice().reverse().slice(0, 8).map(m => {
+    const d = new Date(m.t * 1000);
+    return `<li><time>${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</time><span>${m.text.replace(/</g, "&lt;")}</span></li>`;
+  }).join("") || `<li><span style="color:var(--muted)">まだ何もありません。いいと思ったら ♡ を</span></li>`;
+  const mu = st.taste.mu;
+  const show = [["tempo", "ゆっくり", "速め"], ["softness", "しっかり", "ささやく"], ["darkness", "明るい", "切ない"], ["impressionism", "映画音楽", "印象派"], ["space", "途切れない", "間が多い"]];
+  $("#taste").innerHTML = show.map(([k, a, b]) => `<div class="row"><span>${a}⇔${b}</span><span class="bar"><i style="left:${(mu[k] * 100).toFixed(0)}%"></i></span></div>`).join("")
+    + `<div class="n">${st.taste.n} 回教えてもらいました</div>`;
+  const on = !st.paused;
+  $("#onair").classList.toggle("off", !on); $("#onairText").textContent = on ? "ON AIR" : "おやすみ中";
+}
+function sectionAt(t) {
+  if (!st) return null;
+  for (const s of st.recent) if (s.start <= t && t < s.end) return s;
+  return null;
+}
+
+/* ================================================================ 音符 */
+let notes = [];          // [開始, 長さ, 音高, 強さ, 手]
+async function pullNotes() {
+  const h = heard();
+  try {
+    const j = await (await fetch(`/api/notes?from=${(h - 2).toFixed(2)}&to=${(h + 8).toFixed(2)}`)).json();
+    notes = j.notes;
+  } catch {}
+}
+setInterval(pullNotes, 500);
+
+/* ================================================================ 場面 */
+const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "low-power" });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+const stage = $("#stage");
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x061321);
+scene.fog = new THREE.FogExp2(0x061321, 0.22);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 30);
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // 縦長（スマホ）では引いて全身と鍵盤を収める
+  const portrait = h > w * 0.9;
+  camera.fov = portrait ? 30 : 21;
+  camera.position.set(portrait ? 0.1 : 0.4, portrait ? 1.5 : 1.6, portrait ? 2.1 : 2.5);
+  camera.lookAt(portrait ? 0.02 : 0.05, portrait ? 0.86 : 0.9, 0.05);
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
+
+scene.add(new THREE.HemisphereLight(0x5d8fb8, 0x05080c, 0.55));
+const key = new THREE.DirectionalLight(0xbfdcff, 1.1); key.position.set(-1.2, 2.6, 2.2); scene.add(key);
+const rim = new THREE.DirectionalLight(0x4fb8ff, 1.4); rim.position.set(1.5, 2.0, -2.5); scene.add(rim);
+const glow = new THREE.PointLight(0x7fd8ff, 0.6, 2.2, 1.6); glow.position.set(0, 0.86, 0.36); scene.add(glow);
+
+// 床と、奥の配管っぽい柱（雰囲気だけ）
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ color: 0x0a1824, roughness: 0.35, metalness: 0.2 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const pipeMat = new THREE.MeshStandardMaterial({ color: 0x1b2f3a, roughness: 0.6, metalness: 0.5 });
+for (const [x, z, r] of [[-1.6, -1.6, 0.09], [-1.25, -2.2, 0.06], [1.7, -1.9, 0.1], [2.3, -1.2, 0.07]]) {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 6, 16), pipeMat); p.position.set(x, 3, z); scene.add(p);
+}
+const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 6, 16), pipeMat);
+beam.rotation.z = Math.PI / 2; beam.position.set(0, 2.25, -2.1); scene.add(beam);
+
+/* ================================================================ ピアノ */
+const KEY_W = 0.0235, KEY_TOP = 0.74, KEY_Z = 0.33;
+let keyTop = KEY_TOP;   // キャラの体格に合わせて決め直す      // 白鍵の幅、鍵盤の高さ、鍵盤の中心の奥行き
+const isBlack = p => [1, 3, 6, 8, 10].includes(((p % 12) + 12) % 12);
+const whiteIndex = p => { let n = 0; for (let q = 21; q < p; q++) if (!isBlack(q)) n++; return n; };
+const MID = whiteIndex(60) + 0.5;
+// キャラは +Z を向いて座っているので、低い音はキャラの左（+X）
+function keyX(p) {
+  if (!isBlack(p)) return (MID - whiteIndex(p) - 0.5) * KEY_W;
+  return (MID - whiteIndex(p)) * KEY_W;
+}
+const piano = new THREE.Group(); scene.add(piano);
+const lacquer = new THREE.MeshStandardMaterial({ color: 0x0b0f14, roughness: 0.18, metalness: 0.4 });
+const body = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52 + 0.08, 0.05, 0.27), lacquer);
+body.position.set(0, KEY_TOP - 0.035, KEY_Z + 0.005); piano.add(body);
+const back = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52 + 0.08, 0.035, 0.04), lacquer);
+back.position.set(0, KEY_TOP + 0.012, KEY_Z + 0.11); piano.add(back);
+for (const sx of [-1, 1]) {
+  const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2, 0.22), lacquer);
+  leg.position.set(sx * (KEY_W * 26 + 0.025), KEY_TOP - 0.06 - 1, KEY_Z + 0.005); piano.add(leg);
+}
+const keys = new Map();
+for (let p = 21; p <= 108; p++) {
+  const black = isBlack(p);
+  const mat = new THREE.MeshStandardMaterial({ color: black ? 0x101418 : 0xe8eef2, roughness: black ? 0.35 : 0.5, emissive: 0x58c8ff, emissiveIntensity: 0 });
+  const geo = black ? new THREE.BoxGeometry(KEY_W * 0.55, 0.018, 0.09) : new THREE.BoxGeometry(KEY_W * 0.94, 0.02, 0.15);
+  geo.translate(0, 0, black ? -0.045 : -0.075);      // 奥の端を回転の軸に
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(keyX(p), KEY_TOP + (black ? 0.014 : 0), KEY_Z + 0.075);   // 奥の端（客席側）が軸
+  piano.add(m);
+  keys.set(p, { mesh: m, mat, black, down: 0, lit: 0 });
+}
+// 椅子
+const bench = new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.06, 0.32), lacquer);
+bench.position.set(0, 0.46, -0.08); scene.add(bench);
+
+/* ================================================================ 雨と、音の光 */
+function dotTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d");
+  const r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.3, "rgba(200,235,255,.6)"); r.addColorStop(1, "rgba(200,235,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const DOT = dotTexture();
+const RAIN = 700;
+const rainPos = new Float32Array(RAIN * 3), rainSpeed = new Float32Array(RAIN);
+for (let i = 0; i < RAIN; i++) {
+  rainPos[i * 3] = (Math.random() - 0.5) * 6;
+  rainPos[i * 3 + 1] = Math.random() * 4;
+  rainPos[i * 3 + 2] = -3 + Math.random() * 4.2;
+  rainSpeed[i] = 0.35 + Math.random() * 0.5;
+}
+const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos, 3));
+const rain = new THREE.Points(rainGeo, new THREE.PointsMaterial({ size: 0.025, map: DOT, color: 0x9fdcff, transparent: true, opacity: 0.55, depthWrite: false, blending: THREE.AdditiveBlending }));
+scene.add(rain);
+
+const MOTES = 160;
+const motePos = new Float32Array(MOTES * 3), moteLife = new Float32Array(MOTES), moteVel = new Float32Array(MOTES * 3);
+let moteNext = 0;
+const moteGeo = new THREE.BufferGeometry(); moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+const moteMat = new THREE.PointsMaterial({ size: 0.03, map: DOT, color: 0x8fe0ff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
+const motes = new THREE.Points(moteGeo, moteMat); scene.add(motes);
+for (let i = 0; i < MOTES; i++) motePos[i * 3 + 1] = -10;
+function spawnMote(x, vel) {
+  const i = moteNext++ % MOTES;
+  motePos[i * 3] = x + (Math.random() - 0.5) * 0.02; motePos[i * 3 + 1] = keyTop + 0.02; motePos[i * 3 + 2] = KEY_Z + 0.02;
+  moteVel[i * 3] = (Math.random() - 0.5) * 0.03; moteVel[i * 3 + 1] = 0.08 + vel / 127 * 0.12; moteVel[i * 3 + 2] = (Math.random() - 0.3) * 0.04;
+  moteLife[i] = 2.5 + Math.random() * 1.5;
+}
+
+/* ================================================================ キャラ */
+let vrm = null, bones = {}, rest = {}, seatY = 0.5, F = 1;
+const FINGERS = ["Thumb", "Index", "Middle", "Ring", "Little"];
+const fingerBones = [];
+const lookTarget = new THREE.Object3D(); scene.add(lookTarget);
+const loader = new GLTFLoader();
+loader.register(p => new VRMLoaderPlugin(p));
+loader.load("/vrm/character.vrm", gltf => {
+  vrm = gltf.userData.vrm;
+  VRMUtils.removeUnnecessaryVertices(gltf.scene);
+  VRMUtils.combineSkeletons?.(gltf.scene);
+  if (vrm.meta?.metaVersion === "0") VRMUtils.rotateVRM0(vrm);
+  // VRM 0.x は骨の中で -Z を向いている（外から 180° 回して +Z に向けている）。
+  // そのため骨の X 軸・Z 軸まわりの回転は、見た目の向きが逆になる。F を掛けてそろえる
+  F = vrm.meta?.metaVersion === "0" ? -1 : 1;
+  vrm.scene.traverse(o => { o.frustumCulled = false; });
+  scene.add(vrm.scene);
+  const B = n => vrm.humanoid.getNormalizedBoneNode(n);
+  for (const n of ["hips", "spine", "chest", "upperChest", "neck", "head", "leftUpperLeg", "leftLowerLeg", "rightUpperLeg", "rightLowerLeg",
+                   "leftShoulder", "rightShoulder", "leftUpperArm", "leftLowerArm", "leftHand", "rightUpperArm", "rightLowerArm", "rightHand"]) bones[n] = B(n);
+  seat();
+  const nm = vrm.meta?.title || vrm.meta?.name || "キャラクター";
+  $("#caster").textContent = `演奏：${nm}`; $("#whoName").textContent = nm; $("#avatar").textContent = nm.slice(0, 1);
+  vrm.lookAt && (vrm.lookAt.target = lookTarget, vrm.lookAt.autoUpdate = true);
+}, undefined, e => { $("#err").textContent = `キャラを読み込めませんでした（data/character.vrm）: ${e.message || e}`; });
+
+function seat() {
+  // 座る：太ももを前へ、すねを下へ
+  for (const s of ["left", "right"]) {
+    bones[`${s}UpperLeg`].rotation.x = F * (-Math.PI / 2 + 0.05);
+    bones[`${s}LowerLeg`].rotation.x = F * (Math.PI / 2 - 0.1);
+    bones[`${s}UpperLeg`].rotation.z = F * (s === "left" ? 1 : -1) * 0.06;
+  }
+  vrm.scene.updateMatrixWorld(true);
+  const hipY = bones.hips.getWorldPosition(new THREE.Vector3()).y;
+  const thigh = bones.leftUpperLeg.getWorldPosition(new THREE.Vector3()).y;
+  vrm.scene.position.y += (0.5 + (hipY - thigh)) - hipY;    // 腰の付け根が椅子の上に来る高さへ
+  vrm.scene.position.z = -0.12;
+  vrm.scene.updateMatrixWorld(true);
+  const sh = bones.leftUpperArm.getWorldPosition(new THREE.Vector3());
+  const el = bones.leftLowerArm.getWorldPosition(new THREE.Vector3());
+  const upper = sh.distanceTo(el);
+  const fore = el.distanceTo(bones.leftHand.getWorldPosition(new THREE.Vector3()));
+  keyTop = sh.y - upper * 0.95;                   // 鍵盤は肘の高さより少し下
+  piano.position.y = keyTop - KEY_TOP;
+  // 手が鍵盤に楽に届く距離（腕の長さの 8 割）になるよう、前後の位置を決める
+  const reach = (upper + fore) * 0.8, dy = sh.y - (keyTop + 0.04);
+  const horiz = Math.sqrt(Math.max(0.01, reach * reach - dy * dy));
+  vrm.scene.position.z += (KEY_Z - 0.04 - horiz) - sh.z;
+  bench.position.z = vrm.scene.position.z + 0.02;
+  seatY = 0.5;
+  bench.position.y = seatY - 0.04;
+  // 腕の休みの形（下ろして前へ）
+  bones.leftUpperArm.rotation.set(0, 0.3, -1.15);
+  bones.rightUpperArm.rotation.set(0, -0.3, 1.15);
+  bones.leftLowerArm.rotation.set(0, 0.9, 0);
+  bones.rightLowerArm.rotation.set(0, -0.9, 0);
+  for (const n of ["leftUpperArm", "leftLowerArm", "leftHand", "rightUpperArm", "rightLowerArm", "rightHand"]) rest[n] = bones[n].quaternion.clone();
+  // 指を丸める（ピアノを弾く手：付け根・第二関節を丸め、親指は少しだけ）。基本の曲げを覚えておく
+  for (const s of ["left", "right"]) FINGERS.forEach((f, fi) => ["Proximal", "Intermediate", "Distal"].forEach(j => {
+    const b = vrm.humanoid.getNormalizedBoneNode(`${s}${f}${j === "Proximal" && f === "Thumb" ? "Metacarpal" : j}`) || vrm.humanoid.getNormalizedBoneNode(`${s}${f}${j}`);
+    if (!b) return;
+    const k = f === "Thumb" ? 0.12 : { Proximal: 0.5, Intermediate: 0.55, Distal: 0.3 }[j];
+    const sign = -F * (s === "left" ? 1 : -1);          // この向きで手のひら側へ曲がる（逆だと反り返る）
+    fingerBones.push({ b, side: s, fi, j, sign, base: sign * k });
+  }));
+}
+
+/* 2 本の骨の IK（肩→肘→手）。肘は pole の方へ曲げる */
+const _v = new THREE.Vector3(), _w = new THREE.Vector3(), _q = new THREE.Quaternion(), _pq = new THREE.Quaternion();
+function aimBone(bone, from, to) {
+  // bone の世界の向きを、from→(子の位置) が to の方を向くように回す
+  bone.updateMatrixWorld(true);
+  const origin = bone.getWorldPosition(new THREE.Vector3());
+  const a = from.clone().sub(origin).normalize(), b = to.clone().sub(origin).normalize();
+  if (a.lengthSq() < 1e-8 || b.lengthSq() < 1e-8) return;
+  const delta = new THREE.Quaternion().setFromUnitVectors(a, b);
+  bone.getWorldQuaternion(_q);
+  bone.parent.getWorldQuaternion(_pq);
+  bone.quaternion.copy(_pq.invert().multiply(delta.multiply(_q)));
+  bone.updateMatrixWorld(true);
+}
+function solveArm(side, target, pole) {
+  const U = bones[`${side}UpperArm`], L = bones[`${side}LowerArm`], H = bones[`${side}Hand`];
+  U.quaternion.copy(rest[`${side}UpperArm`]); L.quaternion.copy(rest[`${side}LowerArm`]);
+  U.updateMatrixWorld(true);
+  const S = U.getWorldPosition(new THREE.Vector3()), E = L.getWorldPosition(new THREE.Vector3()), W = H.getWorldPosition(new THREE.Vector3());
+  const a = S.distanceTo(E), b = E.distanceTo(W);
+  const toT = target.clone().sub(S); const d = clamp(toT.length(), Math.abs(a - b) + 1e-3, a + b - 1e-3);
+  const u = toT.normalize();
+  const cosA = (a * a + d * d - b * b) / (2 * a * d), sinA = Math.sqrt(Math.max(0, 1 - cosA * cosA));
+  const pv = pole.clone().sub(S); pv.sub(u.clone().multiplyScalar(pv.dot(u))).normalize();
+  const elbow = S.clone().add(u.clone().multiplyScalar(a * cosA)).add(pv.multiplyScalar(a * sinA));
+  const T = S.clone().add(u.clone().multiplyScalar(d));
+  aimBone(U, E, elbow);
+  aimBone(L, H.getWorldPosition(new THREE.Vector3()), T);
+}
+
+function orientHand(side) {
+  const H = bones[`${side}Hand`];
+  const mid = vrm.humanoid.getNormalizedBoneNode(`${side}MiddleProximal`);
+  const idx = vrm.humanoid.getNormalizedBoneNode(`${side}IndexProximal`);
+  const lit = vrm.humanoid.getNormalizedBoneNode(`${side}LittleProximal`);
+  if (!mid || !idx || !lit) return;
+  H.quaternion.copy(rest[`${side}Hand`]);
+  H.updateMatrixWorld(true);
+  const w = H.getWorldPosition(new THREE.Vector3());
+  // 1) 指の向き：前（客席側 +Z）へ、少し下
+  const want = new THREE.Vector3(0, -0.35, 1).normalize();
+  aimBone(H, mid.getWorldPosition(new THREE.Vector3()), w.clone().add(want));
+  // 2) 指の向きを軸にひねって、人差し指〜小指の並びを水平にする（手のひらが下を向く）
+  const f = mid.getWorldPosition(new THREE.Vector3()).sub(w).normalize();
+  const s = idx.getWorldPosition(new THREE.Vector3()).sub(lit.getWorldPosition(new THREE.Vector3()));
+  s.sub(f.clone().multiplyScalar(s.dot(f))).normalize();
+  // 人差し指→小指の並び s と指の向き f から、手のひら = 左手は f×s、右手は s×f。これが下を向く s を選ぶ
+  const goal = new THREE.Vector3().crossVectors(f, new THREE.Vector3(0, 1, 0)).normalize();
+  if (side === "right") goal.negate();
+  const twist = new THREE.Quaternion().setFromUnitVectors(s, goal);
+  H.getWorldQuaternion(_q); H.parent.getWorldQuaternion(_pq);
+  H.quaternion.copy(_pq.invert().multiply(twist.multiply(_q)));
+}
+
+/* ================================================================ 動き */
+const lift = { l: 0.03, r: 0.03 };   // 手首を鍵盤からどれだけ上げるか（指先が鍵盤に乗るように自動で合わせる）
+const hand = { l: { x: 0.18, y: KEY_TOP + 0.05, z: KEY_Z - 0.03 }, r: { x: -0.15, y: KEY_TOP + 0.05, z: KEY_Z - 0.03 } };
+// 手の移動の計画：手は届く範囲（指を広げて 6〜7 鍵）なら動かさず指で取り、届かないときだけ
+// 次の音に間に合うように、少し持ち上げて弧を描いて移る
+const HALF = 0.07;
+const plan = { l: { to: 0.18, from: 0.18, t0: 0, t1: 0, arc: 0 }, r: { to: -0.15, from: -0.15, t0: 0, t1: 0, arc: 0 } };
+const press = { l: [0, 0, 0, 0, 0], r: [0, 0, 0, 0, 0] };   // 指ごとの押し込み（-：持ち上げ、+：押す）
+const ease = u => u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
+// 音がその手のどの指か（0 親指 … 4 小指）。右手は高い音（-X）ほど小指、左手は高い音ほど親指
+function fingerFor(hd, x, cx) {
+  const off = (cx - x) / 0.024;                         // 白鍵何本ぶん高いか
+  return clamp(Math.round(hd === "r" ? off + 2 : 2 - off), 0, 4);
+}
+let mood = { happy: 0, think: 0, nod: 0 }, blinkT = 2, blinkV = 0, energy = 0;
+const seen = new Set();
+
+function react(m) {
+  if (m.kind === "rate") {
+    if (m.text.startsWith("♥")) { mood.happy = 1; mood.nod = 1; toast("♡ うれしい"); }
+    else { mood.think = 1; toast("…弾き方を変えてみます"); }
+  } else if (m.kind === "words") { mood.nod = 1; toast("うなずいた"); }
+  else if (m.kind === "save") toast("この曲を残しました");
+}
+let toastT;
+function toast(t) { const el = $("#msg"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
+
+function update(dt, time) {
+  const h = heard();
+  const sec = sectionAt(h);
+  const paused = !st || st.paused || !sec;
+
+  // 鍵盤：鳴り始めから少しのあいだ沈む。光は余韻のように消える
+  const pressed = new Map();
+  const targets = { l: [], r: [] };
+  for (const [t0, dur, p, vel, hd] of notes) {
+    const age = h - t0;
+    if (age >= 0 && age < Math.min(dur, 0.45)) pressed.set(p, Math.max(pressed.get(p) || 0, vel));
+    if (age > -0.25 && age < Math.min(dur, 0.6)) targets[hd].push({ x: keyX(p), w: age < 0 ? 0.6 : 1 + vel / 127 });
+    const id = `${t0}:${p}`;
+    if (age >= 0 && age < 0.1 && !seen.has(id)) {
+      seen.add(id);
+      energy = Math.min(1.5, energy + vel / 127 * 0.35);
+      if (Math.random() < 0.6) spawnMote(keyX(p), vel);
+      const k = keys.get(p); if (k) k.lit = Math.max(k.lit, 0.4 + vel / 127);
+    }
+  }
+  if (seen.size > 4000) seen.clear();
+  for (const [p, k] of keys) {
+    const want = pressed.has(p) ? 1 : 0;
+    k.down = lerp(k.down, want, clamp(dt * (want ? 40 : 14), 0, 1));
+    k.mesh.rotation.x = -k.down * 0.06;
+    k.lit = Math.max(0, k.lit - dt * 0.9);
+    k.mat.emissiveIntensity = k.lit * (k.black ? 0.9 : 0.45);
+  }
+  energy = Math.max(0, energy - dt * 0.8);
+  glow.intensity = 0.35 + energy * 1.2;
+
+  // 手：届かない音が来たときだけ、次の音に間に合うように弧を描いて移る。止まっているときは膝の上
+  for (const hd of ["l", "r"]) {
+    const H = hand[hd], P = plan[hd], pr = press[hd];
+    pr.fill(0);
+    if (paused) {
+      const k = clamp(dt * 3, 0, 1);
+      H.x = lerp(H.x, hd === "l" ? 0.1 : -0.1, k); H.y = lerp(H.y, seatY + 0.12, k); H.z = lerp(H.z, 0.1, k);
+      P.to = P.from = H.x; P.t1 = 0;
+      continue;
+    }
+    const mine = notes.filter(n => n[4] === hd);
+    const up = mine.filter(n => n[0] >= h - 0.02 && n[0] < h + 0.6);
+    const held = mine.filter(n => h - n[0] >= 0 && h - n[0] < Math.min(n[1], 0.4));
+    if (up.length) {
+      const tE = Math.min(...up.map(n => n[0]));
+      const xs = up.filter(n => n[0] < tE + 0.05).map(n => keyX(n[2]));
+      if (tE - h > 0.25) xs.push(...held.map(n => keyX(n[2])));   // まだ先なら、いま押さえている音も手の中に
+      const lo = Math.min(...xs), hi = Math.max(...xs);
+      let c = P.to;
+      if (hi - lo > HALF * 2) c = (lo + hi) / 2;
+      else { if (hi > c + HALF) c = hi - HALF; if (lo < c - HALF) c = lo + HALF; }
+      if (Math.abs(c - P.to) > 0.008) {
+        const dist = Math.abs(c - H.x);
+        P.from = H.x; P.to = c; P.t0 = h;
+        P.t1 = h + clamp(tE - h - 0.03, 0.09, 0.4);         // 次の音の少し前に着く
+        P.arc = dist > 0.04 ? Math.min(0.045, dist * 0.3) : 0;
+      }
+    }
+    const u = P.t1 > P.t0 ? clamp((h - P.t0) / (P.t1 - P.t0), 0, 1) : 1;
+    H.x = P.from + (P.to - P.from) * ease(u);
+    const arc = Math.sin(Math.PI * u) * P.arc;
+
+    // 打鍵：鳴る直前に指を持ち上げ、鳴った瞬間に押し込み、手首も少し沈む
+    let dip = 0, black = 0;
+    for (const [t0, dur, p, vel] of mine) {
+      const age = h - t0, x = keyX(p);
+      if (age < -0.09 || age > Math.min(dur, 0.35) + 0.12) continue;
+      const fi = fingerFor(hd, x, H.x);
+      let e;
+      if (age < 0) e = -0.7 * (1 - (-age) / 0.09);
+      else if (age < Math.min(dur, 0.35)) e = 0.6 + 0.4 * vel / 127;
+      else e = (0.6 + 0.4 * vel / 127) * (1 - (age - Math.min(dur, 0.35)) / 0.12);
+      pr[fi] = e > 0 ? Math.max(pr[fi], e) : (pr[fi] > 0 ? pr[fi] : Math.min(pr[fi], e));
+      if (age >= 0 && age < 0.15) dip += vel / 127 * (age < 0.03 ? age / 0.03 : 1 - (age - 0.03) / 0.12);
+      if (age >= 0 && age < Math.min(dur, 0.35) && isBlack(p)) black = 1;
+    }
+    H.y = lerp(H.y, keyTop + lift[hd] + arc - Math.min(0.01, dip * 0.006), clamp(dt * 25, 0, 1));
+    H.z = lerp(H.z, KEY_Z - 0.04 + black * 0.018, clamp(dt * 8, 0, 1));   // 黒鍵は少し奥へ
+  }
+  // 手が交差しないように
+  if (hand.l.x < hand.r.x + 0.05) { const m = (hand.l.x + hand.r.x) / 2; hand.l.x = m + 0.025; hand.r.x = m - 0.025; }
+
+  // 雨と光の粒
+  for (let i = 0; i < RAIN; i++) {
+    rainPos[i * 3 + 1] -= rainSpeed[i] * dt;
+    if (rainPos[i * 3 + 1] < 0) rainPos[i * 3 + 1] += 4;
+  }
+  rainGeo.attributes.position.needsUpdate = true;
+  for (let i = 0; i < MOTES; i++) {
+    if (moteLife[i] <= 0) continue;
+    moteLife[i] -= dt;
+    for (let a = 0; a < 3; a++) motePos[i * 3 + a] += moteVel[i * 3 + a] * dt;
+    if (moteLife[i] <= 0) motePos[i * 3 + 1] = -10;
+  }
+  moteGeo.attributes.position.needsUpdate = true;
+
+  // 表示
+  showNow(sec, h);
+
+  if (!vrm) return;
+  // 体：テンポで揺れる、弾いている手の方へ少し向く、鍵盤を見る
+  const bpm = sec?.bpm || 60, meter = sec?.meter || 4;
+  const phase = (h * bpm / 60) / meter * Math.PI * 2;
+  const sway = paused ? 0.01 : 0.035;
+  const lean = (hand.l.x + hand.r.x) / 2;
+  // x：前かがみ（＋で下を向く）、y：左右を向く、z：左右に傾く
+  bones.spine.rotation.set(F * (paused ? 0.02 : 0.06 + Math.sin(phase * 2) * 0.01), lean * 0.5, F * Math.sin(phase) * sway);
+  bones.chest && bones.chest.rotation.set(F * (0.02 + Math.sin(time * 1.3) * 0.008), lean * 0.4, F * Math.sin(phase + 0.6) * sway * 0.6);
+  mood.nod = Math.max(0, mood.nod - dt * 0.8);
+  const nod = Math.sin((1 - mood.nod) * Math.PI * 2) * mood.nod * 0.12;
+  bones.neck.rotation.set(F * (paused ? 0.03 : 0.04 + nod), lean * 0.6, F * mood.think * 0.12);
+  bones.head.rotation.set(F * ((paused ? 0.0 : 0.02) + Math.sin(time * 0.7) * 0.01), (hand.r.x - lean) * 0.3, F * Math.sin(phase + 1.2) * sway * 0.5);
+  // 目は弾いている手のあたり（右手＝旋律寄り）を見る
+  const gx = paused ? 0 : lerp(hand.l.x, hand.r.x, 0.65);
+  lookTarget.position.set(gx, paused ? seatY : keyTop, paused ? 0.2 : KEY_Z);
+
+  vrm.scene.updateMatrixWorld(true);
+  const off = vrm.scene.position;
+  solveArm("left", new THREE.Vector3(hand.l.x, hand.l.y, hand.l.z), new THREE.Vector3(hand.l.x + 0.25, hand.l.y - 0.6, -0.35));
+  solveArm("right", new THREE.Vector3(hand.r.x, hand.r.y, hand.r.z), new THREE.Vector3(hand.r.x - 0.25, hand.r.y - 0.6, -0.35));
+  // 手のひらを下に向け、手首を少し上げる
+  orientHand("left"); orientHand("right");
+  for (const fb of fingerBones) fb.b.rotation.z = fb.base;
+  vrm.scene.updateMatrixWorld(true);
+  if (!paused) for (const [hd, side] of [["l", "left"], ["r", "right"]]) {
+    // いちばん低い指先（末節の骨の先）が、鍵盤の上面のすぐ上に来るように（押す動きを足す前の形で測る）
+    let low = Infinity;
+    for (const f of ["Index", "Middle", "Ring", "Little"]) {
+      const d = vrm.humanoid.getNormalizedBoneNode(`${side}${f}Distal`);
+      if (d) low = Math.min(low, d.getWorldPosition(_v).y);
+    }
+    if (low < Infinity) lift[hd] = clamp(lift[hd] + (keyTop + 0.012 - low) * 0.3, 0.0, 0.12);
+  }
+  for (const fb of fingerBones) {
+    const e = press[fb.side === "left" ? "l" : "r"][fb.fi];
+    const amt = fb.fi === 0 ? 0.25 : { Proximal: 0.4, Intermediate: 0.25, Distal: 0.1 }[fb.j];
+    fb.b.rotation.z = fb.base + fb.sign * amt * e;
+  }
+
+  // 表情：ふだんは目を伏せて穏やか。いいと言われると微笑む
+  mood.happy = Math.max(0, mood.happy - dt * 0.25);
+  mood.think = Math.max(0, mood.think - dt * 0.3);
+  blinkT -= dt;
+  if (blinkT < 0) { blinkV = 1; blinkT = 2.5 + Math.random() * 4; }
+  blinkV = Math.max(0, blinkV - dt * 7);
+  const em = vrm.expressionManager;
+  if (em) {
+    em.setValue("relaxed", clamp(0.35 - mood.think * 0.3, 0, 1));
+    em.setValue("happy", clamp(mood.happy, 0, 1));
+    em.setValue("blink", clamp(0.5 + blinkV * 0.5 - mood.happy * 0.25, 0, 1));
+  }
+  vrm.update(dt);
+}
+
+/* ================================================================ 画面の文字 */
+const PART = { intro: "イントロ", outro: "アウトロ", "A'": "A′" };
+let shownKey = "";
+function showNow(sec, h) {
+  $("#live").classList.toggle("off", !listening);
+  if (!sec) {
+    if (st?.paused) { $("#title").textContent = "おやすみ中"; $("#meta").textContent = "再開を待っています"; }
+    return;
+  }
+  const key = `${sec.piece}:${sec.part}:${sec.start}`;
+  if (key !== shownKey) {
+    shownKey = key;
+    $("#title").textContent = `曲 ${sec.piece} ・ ${PART[sec.part] ?? sec.part}`;
+    $("#meta").textContent = `${sec.key} ・ ${sec.meter}/4 ・ ♩=${sec.bpm}`;
+    document.title = `♪ 曲 ${sec.piece} ・ ${sec.key} — Piano Improv`;
+    $("#chips").innerHTML = sec.chords.map(c => `<span class="chip">${c}</span>`).join("");
+    // この曲のセクション（ここまでに作られた分）
+    const mine = st.recent.filter(s => s.piece === sec.piece);
+    $("#parts").innerHTML = mine.map(s => `<span data-s="${s.start}"><i></i></span>`).join("");
+  }
+  const u = clamp((h - sec.start) / (sec.end - sec.start), 0, 1);
+  const ci = Math.min(sec.chords.length - 1, Math.floor(u * sec.chords.length));
+  document.querySelectorAll("#chips .chip").forEach((c, i) => c.classList.toggle("on", i === ci));
+  document.querySelectorAll("#parts span").forEach(el => {
+    const s0 = +el.dataset.s;
+    el.classList.toggle("done", s0 < sec.start);
+    el.querySelector("i").style.width = s0 === sec.start ? `${u * 100}%` : "0";
+  });
+  $("#partLbl").textContent = `${PART[sec.part] ?? sec.part}　${Math.floor(h - sec.start)} / ${Math.round(sec.end - sec.start)} 秒`;
+  const s = Math.max(0, Math.floor(h));
+  $("#tc").textContent = [s / 3600, (s % 3600) / 60, s % 60].map(x => String(Math.floor(x)).padStart(2, "0")).join(":");
+}
+
+/* ================================================================ 回す（30 コマ/秒、裏では止める） */
+const clock = new THREE.Clock();
+let acc = 0, t = 0, lastUpdateMs = 0;
+function frame() {
+  requestAnimationFrame(frame);
+  const dt = Math.min(clock.getDelta(), 0.1);
+  acc += dt;
+  if (acc < 1 / 30) return;
+  const step = Math.min(acc, 0.1); acc = 0; t += step;
+  const u0 = performance.now();
+  update(step, t);
+  renderer.render(scene, camera);
+  lastUpdateMs = performance.now() - u0;
+}
+frame();
+window.__piano = { camera, scene, timing: () => ({ updateMs: lastUpdateMs }) };
+
+/* ================================================================ 操作 */
+async function post(path, body) {
+  const r = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body || {}) });
+  return r.json().catch(() => ({}));
+}
+function rate(r) { const h = listening ? heard() : null; post("/api/rate", h === null ? { r } : { r, at: h }); }
+$("#good").onclick = () => rate(1);
+$("#bad").onclick = () => rate(-1);
+$("#next").onclick = () => post("/api/next");
+$("#full").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.();
+$("#shot").onclick = () => {
+  renderer.render(scene, camera);                       // 描いた直後に取り出す
+  renderer.domElement.toBlob(b => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(b); a.download = `piano-improv-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "")}.png`;
+    a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+    toast("この場面を保存しました");
+  });
+};
+addEventListener("keydown", e => {
+  if (e.target.closest("input,textarea")) return;
+  if (e.key === "+" || e.key === "=") rate(1);
+  else if (e.key === "-") rate(-1);
+  else if (e.key === "n") post("/api/next");
+  else if (e.key === "f") $("#full").click();
+  else if (e.key === " ") { e.preventDefault(); toggleListening(); }
+});
+</script>
+</body>
+</html>

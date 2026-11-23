@@ -23,4 +23,4 @@ piano = "pianoimprov.cli:main"
 packages = ["pianoimprov"]
 
 [tool.setuptools.package-data]
-pianoimprov = ["web/*.html"]
+pianoimprov = ["web/*.html", "web/vendor/**/*"]

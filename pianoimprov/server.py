@@ -5,6 +5,9 @@
   GET  /api/events           状態の変化を Server-Sent Events で流す
   GET  /stream               演奏をそのまま MP3 で配信（ブラウザの <audio> で聴く）
   GET  /api/params           パラメータの説明
+  GET  /api/notes?from=&to=  その時間（エンジンの秒）の音符（キャラの演奏用）
+  GET  /character            キャラクターが弾く画面
+  GET  /vrm/character.vrm    キャラのモデル（data/character.vrm か環境変数 PIANO_VRM。公開しない）
   GET  /api/recordings       保存した MIDI の一覧
   GET  /recordings/<name>    保存した MIDI のダウンロード
   POST /api/rate     {"r": 1, "at": 12.3}  評価（-2..2）。at は聴いた時刻（配信の遅れの補正、省略可）
@@ -15,6 +18,8 @@
 from __future__ import annotations
 
 import json
+import mimetypes
+import os
 import queue
 import shutil
 import subprocess
@@ -44,8 +49,10 @@ def make_handler(eng: Engine):
             self.send_response(code)
             self.send_header("Content-Type", ctype)
             self.send_header("Content-Length", str(len(body)))
-            self.send_header("Cache-Control", "no-store")
-            for k, v in (extra or {}).items():
+            extra = extra or {}
+            if "Cache-Control" not in extra:
+                self.send_header("Cache-Control", "no-store")
+            for k, v in extra.items():
                 self.send_header(k, v)
             self.end_headers()
             self.wfile.write(body)
@@ -67,6 +74,28 @@ def make_handler(eng: Engine):
             path = self.path.split("?")[0]
             if path in ("/", "/index.html"):
                 self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
+            elif path in ("/character", "/character.html"):
+                self._send(200, (STATIC / "character.html").read_bytes(), "text/html; charset=utf-8")
+            elif path.startswith("/vendor/"):
+                f = (STATIC / path.lstrip("/")).resolve()
+                if STATIC.resolve() in f.parents and f.is_file():
+                    ctype = "text/javascript; charset=utf-8" if f.suffix == ".js" else (mimetypes.guess_type(f.name)[0] or "application/octet-stream")
+                    self._send(200, f.read_bytes(), ctype, {"Cache-Control": "max-age=86400"})
+                else:
+                    self._json({"error": "not found"}, 404)
+            elif path == "/vrm/character.vrm":
+                f = Path(os.environ.get("PIANO_VRM") or eng.data / "character.vrm")
+                if f.is_file():
+                    self._send(200, f.read_bytes(), "model/gltf-binary")
+                else:
+                    self._json({"error": "キャラのモデルがありません（data/character.vrm に置くか PIANO_VRM を指定）"}, 404)
+            elif path == "/api/notes":
+                q = dict(x.split("=", 1) for x in self.path.partition("?")[2].split("&") if "=" in x)
+                try:
+                    a, b = float(q["from"]), float(q["to"])
+                except (KeyError, ValueError):
+                    return self._json({"error": "from と to（秒）が要ります"}, 400)
+                self._json({"notes": eng.notes(a, min(b, a + 30))})
             elif path == "/api/state":
                 self._json(eng.state())
             elif path == "/api/params":

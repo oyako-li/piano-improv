@@ -182,6 +182,24 @@ class Engine:
         d = self.data / "recordings"
         return sorted((p.name for p in d.glob("*.mid")), reverse=True) if d.exists() else []
 
+    def notes(self, start: float, end: float) -> list[list]:
+        """エンジンの秒で [start, end) に鳴り始める・鳴っている音符。キャラの手と鍵盤を動かすため。
+        1 つは [開始秒, 長さ, 音高, 強さ, 手]（手は "l" か "r"）。"""
+        a, b = int(start * SR), int(end * SR)
+        out = []
+        with self.lock:
+            entries = list(self.timeline)
+        for s, e, sec in entries:
+            if e <= a or s >= b:
+                continue
+            base = s / SR
+            for n in sec.notes:
+                t0 = base + n.t
+                if t0 + n.dur >= start and t0 < end:
+                    out.append([round(t0, 4), round(n.dur, 4), n.pitch, n.vel, "l" if n.part == "lh" else "r"])
+        out.sort()
+        return out
+
     def state(self) -> dict:
         e = self._current_entry()
         now = self.out.now
