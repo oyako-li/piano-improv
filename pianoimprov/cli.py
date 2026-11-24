@@ -3,7 +3,7 @@
   piano play               ずっと即興で弾く（演奏中に + / - / 言葉で好みを教える）
   piano serve              ずっと即興で弾き、ブラウザの UI から操作する（http://127.0.0.1:8765）
   piano render -n 2 out.wav 曲を WAV に書き出す（試聴・確認用）
-  piano learn a.mid b.mid  好きな曲の MIDI から好みを推定して取り込む
+  piano learn a.mid b.mp3 https://youtu.be/...  好きな曲（MIDI・音声・URL）から好みを推定して取り込む
   piano show               いまの好みを表示
   piano reset              好みを初期値に戻す
 """
@@ -117,12 +117,18 @@ def cmd_learn(a) -> None:
     ests = []
     for f in a.files:
         try:
-            e = analyze(f)
+            if Path(f).suffix.lower() in (".mid", ".midi"):
+                e, name = analyze(f), Path(f).name
+            else:                                   # 音声ファイルか URL（YouTube など）
+                from .listen import listen
+                print(f"  {f} を聴いています…", flush=True)
+                e, info = listen(f)
+                name = f"{info['title']}（♩={info['bpm']:.0f}・{info['notes']} 音）"
         except Exception as ex:  # noqa: BLE001
             print(f"  × {f}: {ex}")
             continue
         ests.append(e)
-        print(f"  {Path(f).name}: " + ", ".join(f"{PARAMS[k][0]} {v:.2f}" for k, v in e.items()))
+        print(f"  {name}: " + ", ".join(f"{PARAMS[k][0]} {v:.2f}" for k, v in e.items()))
     if not ests:
         return
     keys = {k for e in ests for k in e}

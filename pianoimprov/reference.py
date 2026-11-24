@@ -44,9 +44,19 @@ def _notes(path: Path):
 def analyze(path: str | Path) -> dict:
     path = Path(path)
     tnotes, bpm, num = _notes(path)
+    if len(tnotes) < 16:
+        raise ValueError(f"{path.name}: 音符が少なすぎます")
+    return estimate(tnotes, bpm, num)
+
+
+def estimate(tnotes: list[tuple], bpm: float | None, num: int | None, *, velocity: bool = True,
+             clip: bool = True) -> dict:
+    """音符の列 [(拍, 長さ(拍), 音高, 強さ, トラック)] から、推定できる好みの値（0..1）を返す。
+    bpm・num が分からなければ None（その値は推定しない）。velocity=False なら強弱を使わない。
+    clip=False なら 0..1 に切らずに返す（音声からの推定で、あとから補正をかけるため）。"""
     notes = [n[:4] for n in tnotes]
     if len(notes) < 16:
-        raise ValueError(f"{path.name}: 音符が少なすぎます")
+        raise ValueError("音符が少なすぎます")
     est: dict[str, float] = {}
     if bpm:
         est["tempo"] = (bpm - 46) / 50
@@ -98,7 +108,9 @@ def analyze(path: str | Path) -> dict:
         est["color"] = (float(np.mean(extra)) / 0.4 - 0.5) / 0.37
 
     vels = np.array([v for _, _, _, v in notes])
-    if vels.std() > 4:          # 強弱の情報がある MIDI だけ
+    if velocity and vels.std() > 4:          # 強弱の情報がある MIDI だけ
         est["softness"] = (78 - float(vels.mean())) / 40
 
+    if not clip:
+        return {k: float(v) for k, v in est.items()}
     return {k: float(min(1, max(0, v))) for k, v in est.items()}

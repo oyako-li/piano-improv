@@ -67,6 +67,7 @@ class Engine:
         self.on_message = on_message
         self.on_section = on_section
         self._announced: int | None = None
+        self._learning = threading.Lock()   # 曲を聴いて覚えるのは一度に 1 曲
         self.thread = threading.Thread(target=self._loop, daemon=True)
         self.thread.start()
 
@@ -134,6 +135,30 @@ class Engine:
             self.rate(rating, text)
         else:
             self._say(f"「{text}」はうまく読めませんでした（{how}）。PIANO_LLM を設定すると LLM で読みます", "warn")
+
+    def learn(self, src: str, weight: float = 0.5) -> None:
+        """曲（URL か音声ファイル）を聴いて、その曲調へ好みを寄せる。数十秒かかるので呼び出し側でスレッドにする。"""
+        from .listen import ListenError, describe, listen
+        if not self._learning.acquire(blocking=False):
+            self._say("いま別の曲を聴いています。終わってからもう一度渡してください", "warn")
+            return
+        try:
+            self._say("その曲を聴いてきます（少しかかります）", "listen")
+            try:
+                est, info = listen(src)
+            except ListenError as e:
+                self._say(f"聴けませんでした：{e}", "warn")
+                return
+            except Exception as e:  # noqa: BLE001  書き起こしの中の予期しない失敗も、画面に出して止まらない
+                self._say(f"聴けませんでした（{type(e).__name__}: {e}）", "warn")
+                return
+            before = dict(self.taste.mu)
+            self.taste.blend(est, weight, {"src": src, "title": info["title"], "bpm": info["bpm"]})
+            self.version += 1
+            self._say(f"「{info['title'][:60]}」から覚えました：{describe(est, info, before, self.taste.mu)}"
+                      "（次のセクションから）", "learn")
+        finally:
+            self._learning.release()
 
     def set_param(self, name: str, value: float) -> None:
         self.taste.set_value(name, value)

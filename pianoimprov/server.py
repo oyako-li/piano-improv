@@ -1,17 +1,18 @@
 """UI サーバー（標準ライブラリのみ）。音は PC のスピーカーから鳴り、ブラウザはリモコンになる。
 
-  GET  /                     画面
+  GET  /                     画面（キャラクターがピアノを弾く。評価・言葉・一時停止・保存もここから）
   GET  /api/state            いまの状態（JSON）
   GET  /api/events           状態の変化を Server-Sent Events で流す
   GET  /stream               演奏をそのまま MP3 で配信（ブラウザの <audio> で聴く）
   GET  /api/params           パラメータの説明
   GET  /api/notes?from=&to=  その時間（エンジンの秒）の音符（キャラの演奏用）
-  GET  /character            キャラクターが弾く画面
+  GET  /character            / へ移動（前の URL）
   GET  /vrm/character.vrm    キャラのモデル（data/character.vrm か環境変数 PIANO_VRM。公開しない）
   GET  /api/recordings       保存した MIDI の一覧
   GET  /recordings/<name>    保存した MIDI のダウンロード
   POST /api/rate     {"r": 1, "at": 12.3}  評価（-2..2）。at は聴いた時刻（配信の遅れの補正、省略可）
   POST /api/words    {"text": "..."}   言葉の指示
+  POST /api/learn    {"src": "https://youtu.be/..."}  その曲を聴いて曲調へ好みを寄せる（YouTube・ニコニコ・SoundCloud）
   POST /api/param    {"name": "tempo", "value": 0.3}
   POST /api/next | /api/save | /api/pause | /api/resume
 """
@@ -73,9 +74,9 @@ def make_handler(eng: Engine):
         def do_GET(self):
             path = self.path.split("?")[0]
             if path in ("/", "/index.html"):
-                self._send(200, (STATIC / "index.html").read_bytes(), "text/html; charset=utf-8")
-            elif path in ("/character", "/character.html"):
                 self._send(200, (STATIC / "character.html").read_bytes(), "text/html; charset=utf-8")
+            elif path in ("/character", "/character.html"):      # 前の URL（ブックマーク用）
+                self._send(302, b"", "text/plain", {"Location": "/"})
             elif path.startswith("/vendor/"):
                 f = (STATIC / path.lstrip("/")).resolve()
                 if STATIC.resolve() in f.parents and f.is_file():
@@ -200,6 +201,13 @@ def make_handler(eng: Engine):
                     if not text:
                         return self._json({"error": "text is empty"}, 400)
                     threading.Thread(target=eng.words, args=(text,), daemon=True).start()
+                    return self._json({"ok": True})
+                if path == "/api/learn":
+                    from .listen import allowed_url
+                    src = str(b.get("src", "")).strip()[:500]
+                    if not allowed_url(src):
+                        return self._json({"error": "YouTube・ニコニコ・SoundCloud の URL だけ渡せます"}, 400)
+                    threading.Thread(target=eng.learn, args=(src,), daemon=True).start()
                     return self._json({"ok": True})
                 if path == "/api/param":
                     eng.set_param(str(b["name"]), float(b["value"]))

@@ -5,11 +5,11 @@
 ```mermaid
 flowchart TD
     subgraph U["操作する人"]
-        B["ブラウザ<br/>web/index.html"]
+        B["ブラウザ<br/>web/character.html"]
         T["ターミナル<br/>piano play"]
     end
 
-    B -- "POST 評価・言葉・スライダー<br/>GET /api/events (SSE)<br/>GET /stream (MP3)" --> S["server.py<br/>HTTP サーバー :8765"]
+    B -- "POST 評価・言葉・一時停止・保存<br/>GET /api/notes (キャラの手)<br/>GET /api/events (SSE)<br/>GET /stream (MP3)" --> S["server.py<br/>HTTP サーバー :8765"]
     T -- "+ - 言葉 s n" --> C["cli.py"]
     S --> E
     C --> E

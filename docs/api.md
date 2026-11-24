@@ -4,7 +4,10 @@
 
 | メソッド | パス | 内容 |
 |---|---|---|
-| GET | `/` | 操作画面 |
+| GET | `/` | 画面（キャラクターが弾く。評価・言葉・一時停止・保存もここから） |
+| GET | `/character` | `/` へ移動（前の URL） |
+| GET | `/api/notes?from=&to=` | その時間（エンジンの秒）の音符。キャラの手と鍵盤を動かすため |
+| GET | `/vrm/character.vrm` | キャラのモデル（`data/character.vrm` か `PIANO_VRM`） |
 | GET | `/api/state` | いまの状態（JSON） |
 | GET | `/api/events` | 状態の変化を Server-Sent Events で流す（変化があったとき、なくても 1 秒ごと） |
 | GET | `/stream` | 演奏を MP3（192kbps）で配信。ffmpeg が必要 |
@@ -13,7 +16,8 @@
 | GET | `/recordings/<name>.mid` | 保存した MIDI のダウンロード |
 | POST | `/api/rate` | `{"r": 1, "at": 12.3}` 評価（-2〜2、0 以外）。`at` は聴いた時刻（エンジンの秒、配信の遅れの補正。省略可） |
 | POST | `/api/words` | `{"text": "もっと静かに"}` 言葉の指示 |
-| POST | `/api/param` | `{"name": "tempo", "value": 0.3}` 好みの値を直接変える |
+| POST | `/api/learn` | `{"src": "https://youtu.be/..."}` その曲を聴いて曲調へ好みを寄せる。YouTube・ニコニコ・SoundCloud の URL だけ（[listen.md](listen.md)）。すぐ返り、結果は `/api/events` のメッセージ（`listen` → `learn` か `warn`）で届く |
+| POST | `/api/param` | `{"name": "tempo", "value": 0.3}` 好みの値を直接変える（画面からは使っていない） |
 | POST | `/api/next` | 次の曲へ |
 | POST | `/api/save` | いまの曲を MIDI で保存 |
 | POST | `/api/pause` / `/api/resume` | 一時停止 / 再開（再開は新しい曲から） |

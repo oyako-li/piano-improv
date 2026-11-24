@@ -1,9 +1,11 @@
-<h1 align="center">piano-improv</h1>
+<h1 align="center">Amane</h1>
+
+<p align="center"><sub>天音（あまね）— リポジトリ名は piano-improv</sub></p>
 
 <p align="center"><b>落ち着いて優雅なピアノを、PC でずっと即興で弾き続ける AI。<br>聴きながら「いい」「微妙」と伝えると、だんだん自分の好みに寄っていきます。</b></p>
 
 <p align="center">
-  <a href="https://oyako-li.github.io/piano-improv/"><img src="docs/screen.jpg" alt="Piano Improv の操作画面" width="760"></a>
+  <a href="https://oyako-li.github.io/piano-improv/"><img src="docs/screen.jpg" alt="Amane の画面" width="760"></a>
 </p>
 
 <p align="center">
@@ -13,7 +15,7 @@
 
 - **方向は 2 つ**：印象派（サティ・ドビュッシー的な平行和音・リディア・揺れる maj7）と、日本の映画音楽系（王道進行・IV→IVm→I・カノン風の下降バス・ヨナ抜き）。その間のどこが好きかを、聴きながら探します
 - **終わらない**：intro → A → B → A' → outro の曲を、調・拍子・テンポ・動機を変えながら次々に弾きます
-- **好みの教え方は 3 つ**：聴きながら評価する／「もっと静かに」「雨の夜っぽく」と言葉で言う／好きな曲の MIDI を渡す
+- **好みの教え方は 3 つ**：聴きながら評価する／「もっと静かに」「雨の夜っぽく」と言葉で言う／好きな曲を渡す（YouTube などの URL・音声ファイル・MIDI。その曲調を覚えます）
 - **GPU はいりません**：作曲は音楽理論のルールと乱数。CPU ですぐ動きます。LLM は言葉の解釈に使うこともできる、という程度の任意です
 - **音はグランドピアノ**：Salamander Grand Piano（ヤマハ C5 の録音）をサンプル単位のタイミングで鳴らします
 - **ブラウザから操作・試聴**：UI サーバーを立てると、スマホなどから評価や言葉の指示ができ、演奏も MP3 で配信されます
@@ -51,11 +53,12 @@ tools/get_piano.sh          # ピアノの音（Salamander Grand Piano, 約 1.2G
 .venv/bin/piano serve --no-speaker       # PC では鳴らさず、ブラウザへの配信だけ
 ```
 
-画面の「▶ このブラウザで聴く」で、その端末にも MP3（192kbps）で配信されます。配信は数秒遅れますが、評価は「その端末で聞こえていた部分」に付きます。
-いまの曲・調・和音、評価、言葉の指示、一時停止 / 次の曲 / 保存、好みのスライダー、保存した MIDI のダウンロードができます。キー操作は `+` `-` `n` `s` `Space`。
+開くと、3D のキャラクターがピアノの前に座って、聞こえている音に合わせて鍵盤を弾いています（試作）。
+「▶ 聴く」で、その端末にも MP3（192kbps）で配信されます。配信は数秒遅れますが、鍵盤の動きと評価は「その端末で聞こえていた部分」に合わせます。
+いまの曲・調・和音、評価、言葉の指示（YouTube などの URL を貼ると、その曲を聴いて曲調を覚えます）、次の曲 / 演奏の一時停止と再開 / MIDI で保存、保存した曲のダウンロード、場面の画像保存と全画面ができます。
+キー操作は `+` いい、`-` 微妙、`n` 次の曲、`p` 演奏を止める / 再開、`s` 曲を残す、`Space` 聴く / 止める、`f` 全画面。好みの値を直接動かすスライダーはありません（言葉か評価で伝えます）。
 
-**キャラクターが弾く画面**（試作）：`/character` を開くと、3D のキャラクターがピアノの前に座って、聞こえている音に合わせて鍵盤を弾きます。
-キャラのモデル（VRM）は自分で用意して `data/character.vrm` に置くか、環境変数 `PIANO_VRM` で指定します（このリポジトリには入っていません）。
+キャラのモデル（VRM）は自分で用意して `data/character.vrm` に置くか、環境変数 `PIANO_VRM` で指定します（このリポジトリには入っていません）。モデルが無くても、キャラが出ないだけで、ほかの操作はできます。
 three.js と three-vrm は `pianoimprov/web/vendor/` に同梱しているので、ネットにつながらなくても動きます。
 
 認証はありません。ほかの端末から使うときは、信頼できるネットワークの中だけにしてください（[docs/serve.md](docs/serve.md) に、常駐のさせ方と Tailscale での公開の例があります）。
@@ -64,10 +67,12 @@ three.js と three-vrm は `pianoimprov/web/vendor/` に同梱しているので
 
 ```bash
 .venv/bin/piano render -n 2 out.wav     # 2 曲を WAV と MIDI に書き出す
-.venv/bin/piano learn 好きな曲.mid ...   # 好きな曲の MIDI から好みを推定して取り込む（-w で重み）
+.venv/bin/piano learn 好きな曲.mid ...   # 好きな曲から好みを推定して取り込む（-w で重み）。MIDI・音声・URL を渡せる
 .venv/bin/piano show                    # いまの好み
 .venv/bin/piano reset                   # 好みを初期値に戻す（前のものは .bak に残る）
 ```
+
+音声と URL から推定するには追加の依存が要ります（`pip install -e '.[listen]'` と `pip install --no-deps 'basic-pitch==0.4.0'`）。何を推定してどれだけ当たるかは [docs/listen.md](docs/listen.md) にあります。
 
 言葉の指示は普段キーワード辞書で読みます。辞書で読めない言い回しをローカル LLM に読ませるには、
 `PIANO_LLM=gemma3:latest .venv/bin/piano play` のように Ollama のモデル名を渡します。
@@ -101,8 +106,9 @@ pianoimprov/
   taste.py       好みの保存と学習（data/taste.json, data/ratings.jsonl）
   words.py       言葉 → 好みの変化
   reference.py   好きな曲の MIDI → 好みの推定
+  listen.py      好きな曲の音声・URL → 書き起こし → 好みの推定（任意の依存）
   audio.py       ピアノの音源と出力（pacat / pw-cat、配信用のタップ）
-  web/index.html 操作画面
+  web/character.html 画面（キャラが弾く・操作もここ）
 tools/get_piano.sh  音源のダウンロード
 docs/          説明と試聴ページ（GitHub Pages）
 ```
@@ -113,6 +119,7 @@ docs/          説明と試聴ページ（GitHub Pages）
 
 - 確かめた：設定を動かすと旋律の統計（音の多さ・跳躍・ヨナ抜き度）が実際に変わること、短 9 度の衝突が長い旋律音の約 3% まで減ったこと、ライブ再生と配信、評価が配信の遅れを補正して正しいセクションに付くこと
 - `learn`（好きな曲からの推定）は粗いです。自作の出力で突き合わせると、色彩・跳躍・音の多さ・音域は設定に沿って動きますが、余白とヨナ抜き度は当てにならなかったので推定から外しています。実在の曲での精度は未確認です
+- 音声・URL からの推定は、自作の演奏 48 曲を MP3 にして数えました。テンポは 48 曲すべてで当たり、長調か短調か・和音の色彩・音域は MIDI からの推定とよく一致します（[docs/listen.md](docs/listen.md)）。実際の録音で確かめたのはピアノの 2 曲（ジムノペディ、ジャズ）だけで、歌もの・オーケストラは試していません
 - 音楽として好みかどうかは、聴いてみないと分かりません。[試聴ページ](https://oyako-li.github.io/piano-improv/)に、初期設定のままの 3 曲があります
 
 ## この先
@@ -129,4 +136,4 @@ docs/          説明と試聴ページ（GitHub Pages）
 
 ---
 
-**piano-improv** — an AI that improvises calm, elegant piano music forever, somewhere between Impressionism (Satie, Debussy) and Japanese film scores, and learns your taste as you listen. Rate what you hear (`+` / `-`), tell it in words ("quieter", "like a rainy night"), or give it MIDI files you like. Composition is rule-based music theory plus randomness (no GPU), played with the Salamander Grand Piano. Run `piano play` in a terminal or `piano serve` for a browser UI with MP3 streaming. [Listen to a demo](https://oyako-li.github.io/piano-improv/). See [AGENTS.md](AGENTS.md) for notes aimed at AI coding assistants.
+**Amane** (repo: piano-improv) — an AI that improvises calm, elegant piano music forever, somewhere between Impressionism (Satie, Debussy) and Japanese film scores, and learns your taste as you listen. Rate what you hear (`+` / `-`), tell it in words ("quieter", "like a rainy night"), or give it songs you like (a YouTube URL, an audio file, or MIDI) and it picks up their tempo, mode, harmonic color and register. Composition is rule-based music theory plus randomness (no GPU), played with the Salamander Grand Piano. Run `piano play` in a terminal or `piano serve` for a browser UI with MP3 streaming. [Listen to a demo](https://oyako-li.github.io/piano-improv/). See [AGENTS.md](AGENTS.md) for notes aimed at AI coding assistants.

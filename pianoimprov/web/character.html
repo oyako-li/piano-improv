@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Piano Improv</title>
+<title>Amane</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='1.5' fill='%230b2236'/%3E%3Cg fill='%238fd3ff'%3E%3Crect x='2.5' y='4.5' width='2' height='7'/%3E%3Crect x='5.5' y='4.5' width='2' height='7'/%3E%3Crect x='8.5' y='4.5' width='2' height='7'/%3E%3Crect x='11.5' y='4.5' width='2' height='7'/%3E%3C/g%3E%3C/svg%3E">
 <style>
 :root{
@@ -13,12 +13,15 @@
   --mono:"SF Mono",Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
 a{color:inherit}
 button{font:inherit;color:inherit}
-.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+/* ページはスクロールさせない：画面の高さに収め、余った高さを舞台に使う */
+.wrap{height:100vh;height:100dvh;max-width:1560px;margin:0 auto;padding:0 20px 14px;display:flex;flex-direction:column}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px}
+.col{display:flex;flex-direction:column;min-height:0}
 /* 上の帯 */
-.top{display:flex;align-items:center;gap:14px;padding:16px 0 14px}
+.top{flex:none;display:flex;align-items:center;gap:14px;padding:12px 0 10px}
 .brand{display:flex;align-items:center;gap:10px;text-decoration:none}
 .brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#14314a,#0a1826);border:1px solid var(--line);display:grid;place-items:center}
 .brand b{white-space:nowrap;font-family:var(--serif);font-weight:400;font-size:20px;letter-spacing:.1em}
@@ -31,7 +34,7 @@ button{font:inherit;color:inherit}
 .pill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:15px;border:1px solid var(--line);background:var(--panel);font-size:12px;text-decoration:none;cursor:pointer}
 .pill:hover{border-color:rgba(150,200,235,.4)}
 /* 舞台 */
-.stage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#061321;border:1px solid var(--line)}
+.stage{position:relative;flex:1;min-height:150px;border-radius:14px;overflow:hidden;background:#061321;border:1px solid var(--line)}
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .corner{position:absolute;width:34px;height:34px;border:2px solid rgba(143,211,255,.55);pointer-events:none}
 .corner.tl{top:14px;left:14px;border-right:0;border-bottom:0}.corner.tr{top:14px;right:14px;border-left:0;border-bottom:0}
@@ -48,15 +51,15 @@ button{font:inherit;color:inherit}
 .err{position:absolute;left:16px;right:16px;bottom:56px;color:#ffb4a8;font-size:13px;text-align:center}
 .stage:fullscreen{border-radius:0;border:0;aspect-ratio:auto}
 /* 字幕のような帯：いまの曲 */
-.caption{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-top:14px;min-height:40px}
+.caption{flex:none;display:flex;align-items:center;gap:16px;flex-wrap:nowrap;overflow:hidden;margin-top:10px;min-height:34px}
 .caption .now{white-space:nowrap}
 .caption .t{font-family:var(--serif);font-size:20px;letter-spacing:.08em}
 .caption .m{color:var(--muted);font-size:12px;margin-left:10px}
-.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;min-width:0}
 .chip{font-size:12px;padding:2px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);transition:all .25s}
 .chip.on{color:var(--ink);border-color:rgba(143,211,255,.6);background:rgba(20,50,72,.75)}
 /* プレーヤーの帯 */
-.player{display:flex;align-items:center;gap:12px;margin-top:12px}
+.player{flex:none;display:flex;align-items:center;gap:12px;margin-top:8px}
 .play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#06121e;display:grid;place-items:center;cursor:pointer;flex:none}
 .play:hover{filter:brightness(1.08)}
 .vol{display:flex;align-items:center;gap:6px;color:var(--muted)}
@@ -74,35 +77,84 @@ button{font:inherit;color:inherit}
 .rate .bad{color:var(--bad)}
 .icon{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;color:var(--muted)}
 .icon:hover{color:var(--ink);border-color:rgba(150,200,235,.45)}
-/* 弾き手と、できごと */
-.who{display:flex;align-items:center;gap:14px;margin-top:22px;padding:16px 0;border-top:1px solid var(--line)}
-.who .av{width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b5878,#0b1a28);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--serif);font-size:18px}
-.who b{font-size:15px}
-.who .d{color:var(--muted);font-size:12px}
-.grid{display:grid;grid-template-columns:1fr 300px;gap:24px;padding-bottom:48px}
-.grid h3{font-size:13px;font-weight:600;color:var(--muted);letter-spacing:.06em;margin:0 0 10px}
-.log{list-style:none;margin:0;padding:0;display:grid;gap:6px}
-.log li{display:flex;gap:10px;font-size:13px;padding:8px 12px;border-radius:10px;background:var(--panel)}
-.log time{color:var(--muted);font:11px var(--mono);padding-top:2px;flex:none}
-.taste{display:grid;gap:8px;background:var(--panel);border-radius:12px;padding:14px}
+/* 右の列＝チャット（YouTube のライブ配信の並び）。上にタブ、真ん中にやりとり、下に入力欄 */
+.side{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tabs{flex:none;display:flex;align-items:center;gap:2px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:4px 10px;border-radius:8px;color:var(--muted);cursor:pointer;font-size:13px;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);background:var(--panel2)}
+.pane{display:none;flex:1;min-height:0;overflow:hidden;padding:10px 14px}
+.pane.on{display:flex;flex-direction:column;gap:10px}
+/* やりとりは新しいものが下。入りきらない古いものは上で消える（スクロールはさせない） */
+.pane.chat.on{justify-content:flex-end;gap:0;-webkit-mask-image:linear-gradient(transparent,#000 48px);mask-image:linear-gradient(transparent,#000 48px)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.log li{font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.log time{color:var(--muted);font:11px var(--mono);margin-right:7px}
+.log b{font-weight:600;margin-right:7px}
+.log .you b{color:var(--warm)}
+.log .amane b{color:var(--accent)}
+.log .sys{color:var(--muted);font-size:12px}
+.log .sys b{display:none}
+.av{width:34px;height:34px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b5878,#0b1a28);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--serif);font-size:16px}
+.taste{display:grid;gap:6px;background:var(--panel);border-radius:12px;padding:12px 14px}
 .taste .row{display:grid;grid-template-columns:112px 1fr;white-space:nowrap;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .taste .bar{height:4px;border-radius:2px;background:rgba(150,200,235,.12);position:relative}
 .taste .bar i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent2);transform:translateX(-50%)}
 .taste .n{color:var(--muted);font-size:12px;margin-top:4px}
-.keys{color:var(--muted);font-size:12px;margin-top:10px}
+.keys{flex:none;color:var(--muted);font-size:11px;line-height:1.9;margin-top:auto}
+/* 言葉で伝える */
+.words{flex:none;display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--line)}
+.words input{flex:1;min-width:0;font:inherit;color:var(--ink);height:38px;padding:0 14px;border-radius:19px;border:1px solid var(--line);background:var(--panel)}
+.words input::placeholder{color:var(--muted)}
+.words input:focus{outline:none;border-color:rgba(143,211,255,.55)}
+.words button{height:38px;padding:0 16px;border-radius:19px;border:1px solid rgba(143,211,255,.45);background:var(--panel2);cursor:pointer;font-size:13px;color:var(--accent)}
+.hints{flex:none;display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;padding:0 12px 8px;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+.hints button{flex:none;font-size:12px;padding:2px 10px;border-radius:12px;background:transparent;border:1px solid var(--line);color:var(--muted);cursor:pointer}
+.hints button:hover{color:var(--ink);border-color:rgba(150,200,235,.4)}
+.icon.on{color:var(--warm);border-color:rgba(255,217,168,.4)}
+/* 残した曲 */
+.recs{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.recs li{font-size:12px}
+.recs a{display:flex;justify-content:space-between;gap:10px;padding:7px 12px;border-radius:10px;background:var(--panel);text-decoration:none;font-family:var(--mono)}
+.recs a:hover{background:var(--panel2)}
+.recs a span{color:var(--muted)}
+.recs .empty{color:var(--muted);padding:4px 2px}
+.caption .av{margin-right:-4px}
 kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px}
+@media (max-height:720px){
+  .hints{display:none}
+  .taste{gap:3px;padding:10px 14px}
+}
+@media (max-width:900px){
+  .main{grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr) auto;gap:10px}
+  .side{height:clamp(150px,34dvh,320px)}
+  .keys{display:none}
+}
+@media (max-width:900px) and (max-height:620px){
+  .side{height:150px}
+  .hints{display:none}
+}
 @media (max-width:760px){
-  .wrap{padding:0 12px}
-  .stage{aspect-ratio:4/5}
+  .wrap{padding:0 12px 10px}
   .caption .chips{display:none}
-  .player{flex-wrap:wrap}
+  .caption{min-height:28px;margin-top:8px}
+  .caption .t{font-size:17px}
+  .player{flex-wrap:wrap;gap:6px}
   .vol{display:none}
   .prog{order:5;flex-basis:100%}
-  .grid{grid-template-columns:1fr}
-  .corner,.caster,.keys,.brand small{display:none}
+  .play{width:42px;height:42px}
+  .rate{gap:5px}
+  .rate button{height:34px;padding:0 10px}
+  .icon{width:32px;height:34px}
+  .corner,.caster,.brand small{display:none}
   .onair{padding:0 9px}
   .brand b{font-size:17px;letter-spacing:.06em}
   .top{gap:8px}
+  .start{padding-top:4%}
+  .start span{font-size:16px;padding:10px 22px}
+}
+@media (max-width:380px){
+  .brand b{display:none}
 }
 </style>
 <script type="importmap">
@@ -112,14 +164,17 @@ kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;b
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="brand" href="/character">
+    <a class="brand" href="/">
       <span class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8fd3ff" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M8 5v9M12 5v9M16 5v9" /><path d="M7 5v6M11 5v6M15 5v6M19 5v6" stroke-width="2.6" stroke="#0a1826"/></svg></span>
-      <span><b>Piano Improv</b><small>あなたのために、ずっと即興で</small></span>
+      <span><b>Amane</b><small>あなたのために、ずっと即興で</small></span>
     </a>
     <span class="spacer"></span>
     <span class="onair off" id="onair"><i></i><span id="onairText">STANDBY</span></span>
-    <a class="pill" href="/" title="好みのスライダー・言葉の指示・保存">操作画面</a>
+    <a class="pill" href="https://github.com/oyako-li/piano-improv" target="_blank" rel="noopener">しくみ</a>
   </header>
+
+  <div class="main">
+  <div class="col">
 
   <section class="stage" id="stage">
     <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
@@ -130,7 +185,8 @@ kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;b
     <div class="err" id="err"></div>
   </section>
   <div class="caption">
-    <div class="now"><span class="t" id="title">Piano Improv</span><span class="m" id="meta">読み込み中…</span></div>
+    <div class="av" id="avatar" title="弾き手">♪</div>
+    <div class="now"><span class="t" id="title">Amane</span><span class="m" id="meta">読み込み中…</span></div>
     <div class="chips" id="chips"></div>
   </div>
 
@@ -143,22 +199,30 @@ kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;b
       <button class="good" id="good" title="いい（+）">♡ いい</button>
     </div>
     <button class="icon" id="next" title="次の曲（n）" aria-label="次の曲"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M5 5v14l10-7zM17 5h2v14h-2z"/></svg></button>
+    <button class="icon" id="pause" title="演奏を止める（p）" aria-label="演奏を止める"><svg id="pauseIcon" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/></svg></button>
+    <button class="icon" id="save" title="この曲を MIDI で残す（s）" aria-label="この曲を残す"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 17V5l10-2v12"/><circle cx="6.5" cy="17" r="2.5"/><circle cx="16.5" cy="15" r="2.5"/></svg></button>
     <button class="icon" id="shot" title="この場面を画像で保存" aria-label="画像で保存"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></button>
     <button class="icon" id="full" title="全画面" aria-label="全画面"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
   </div>
 
-  <div class="who">
-    <div class="av" id="avatar">♪</div>
-    <div><b id="whoName">…</b><div class="d">あなたの好みを覚えながら、ずっと即興で弾いています</div></div>
-    <span class="spacer"></span>
-    <a class="pill" href="https://github.com/oyako-li/piano-improv" target="_blank" rel="noopener">しくみ</a>
   </div>
 
-  <div class="grid">
-    <section><h3>できごと</h3><ul class="log" id="log"></ul></section>
-    <section><h3>覚えたこと</h3><div class="taste" id="taste"></div>
-      <div class="keys"><kbd>+</kbd> いい ・ <kbd>-</kbd> 微妙 ・ <kbd>n</kbd> 次の曲 ・ <kbd>Space</kbd> 聴く/止める ・ <kbd>f</kbd> 全画面</div>
-    </section>
+  <aside class="side" id="side" aria-label="チャット">
+    <div class="tabs" role="tablist">
+      <button class="on" data-pane="chat" role="tab">チャット</button>
+      <button data-pane="taste" role="tab">覚えたこと</button>
+      <button data-pane="recs" role="tab">残した曲</button>
+    </div>
+    <div class="pane chat on" id="pane-chat"><ul class="log" id="log"></ul></div>
+    <div class="pane" id="pane-taste"><div class="taste" id="taste"></div>
+      <div class="keys"><kbd>+</kbd> いい ・ <kbd>-</kbd> 微妙 ・ <kbd>n</kbd> 次の曲 ・ <kbd>p</kbd> 止める/再開 ・ <kbd>s</kbd> 曲を残す ・ <kbd>Space</kbd> 聴く ・ <kbd>f</kbd> 全画面</div></div>
+    <div class="pane" id="pane-recs"><ul class="recs" id="recs"><li class="empty">まだありません</li></ul></div>
+    <div class="hints" id="hints"></div>
+  <form class="words" id="words" autocomplete="off">
+    <input id="wordsText" placeholder="言葉か、好きな曲の URL" aria-label="言葉か、好きな曲の URL" title="「もっと静かに」などの言葉か、YouTube などの曲の URL（その曲調を覚えます）" enterkeyhint="send">
+    <button type="submit">伝える</button>
+  </form>
+  </aside>
   </div>
 </div>
 <script type="module">
@@ -175,8 +239,10 @@ const audio = new Audio();
 audio.preload = "none";
 let listening = false, streamStart = 0;
 let st = null, stAt = 0;                       // 最後の状態と、受け取った時刻
+// MP3 は頭に無音（エンコーダとデコーダの遅れ）が入るので、届く音は計算より約 40ms 遅い（tools/measure_sync.py で 3 回測って一定）
+const AUDIO_LAG = 0.04;
 function heard() {
-  if (listening && audio.currentTime > 0) return streamStart + audio.currentTime;
+  if (listening && audio.currentTime > 0) return streamStart + audio.currentTime - AUDIO_LAG;
   if (st) return st.now + (performance.now() - stAt) / 1000;   // 聴いていないときはサーバーの時計
   return 0;
 }
@@ -216,18 +282,35 @@ es.onmessage = ev => {
   lastVersion = st.version;
   renderSide();
 };
-const KIND = { rate: "評価", words: "言葉", save: "保存", warn: "", info: "" };
+const KIND = { rate: "評価", words: "言葉", save: "保存", listen: "曲", learn: "曲", warn: "", info: "" };
+/* できごとを、チャットの行（あなた／弾き手／お知らせ）に直す */
+let performer = "Amane";
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function chatLines(m) {
+  const you = t => ({ who: "you", t }), her = t => ({ who: "amane", t }), sys = t => ({ who: "sys", t });
+  const q = m.text.match(/^「([\s\S]+?)」(?:→ ?)?([\s\S]*)$/);
+  if (m.kind === "words" && q) return [you(q[1]), her(q[2])];
+  if (m.kind === "warn" && q && !/から覚え/.test(m.text)) return [you(q[1]), her(q[2].replace(/^は/, ""))];
+  if (m.kind === "rate") return [you(m.text.startsWith("♥") ? "♡ いい" : "微妙"), her(m.text.replace(/^[♥×]\s*/, ""))];
+  if (m.kind === "save") return [her(m.text.replace(/^保存しました: ?/, "この曲を残しました：").replace(/\.mid$/, ""))];
+  if (m.kind === "listen" || m.kind === "learn" || m.kind === "warn") return [her(m.text)];
+  return [sys(m.text)];
+}
 function renderSide() {
-  $("#log").innerHTML = st.messages.slice().reverse().slice(0, 8).map(m => {
-    const d = new Date(m.t * 1000);
-    return `<li><time>${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}</time><span>${m.text.replace(/</g, "&lt;")}</span></li>`;
-  }).join("") || `<li><span style="color:var(--muted)">まだ何もありません。いいと思ったら ♡ を</span></li>`;
+  const hm = t => { const d = new Date(t * 1000); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+  const lines = st.messages.slice(-20).flatMap(m => chatLines(m).map(l => ({ ...l, time: hm(m.t) })));
+  $("#log").innerHTML = lines.map(l => `<li class="${l.who}"><time>${l.time}</time><b>${l.who === "you" ? "あなた" : esc(performer)}</b>${esc(l.t)}</li>`).join("")
+    || `<li class="sys">まだ何もありません。気に入ったら ♡、言葉や好きな曲の URL もここから</li>`;
   const mu = st.taste.mu;
   const show = [["tempo", "ゆっくり", "速め"], ["softness", "しっかり", "ささやく"], ["darkness", "明るい", "切ない"], ["impressionism", "映画音楽", "印象派"], ["space", "途切れない", "間が多い"]];
   $("#taste").innerHTML = show.map(([k, a, b]) => `<div class="row"><span>${a}⇔${b}</span><span class="bar"><i style="left:${(mu[k] * 100).toFixed(0)}%"></i></span></div>`).join("")
     + `<div class="n">${st.taste.n} 回教えてもらいました</div>`;
   const on = !st.paused;
   $("#onair").classList.toggle("off", !on); $("#onairText").textContent = on ? "ON AIR" : "おやすみ中";
+  $("#pause").classList.toggle("on", !on);
+  $("#pauseIcon").innerHTML = on ? '<path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z"/>' : '<path d="M7 4.5v15l13-7.5z"/>';
+  const pl = on ? "演奏を止める（p）" : "演奏を再開する（p）";
+  $("#pause").title = pl; $("#pause").setAttribute("aria-label", pl.replace(/（.*/, ""));
 }
 function sectionAt(t) {
   if (!st) return null;
@@ -264,7 +347,10 @@ function resize() {
   camera.aspect = w / h;
   // 縦長（スマホ）では引いて全身と鍵盤を収める
   const portrait = h > w * 0.9;
-  camera.fov = portrait ? 30 : 21;
+  // 舞台の縦横比は画面次第で変わる。基準（横 16:9・縦 4:5）より細いときは、横に写る幅を保つよう画角を広げる
+  const base = portrait ? 4 / 5 : 16 / 9, fov0 = portrait ? 30 : 21, aspect = w / h;
+  camera.fov = aspect >= base ? fov0
+    : 2 * Math.atan(Math.tan(fov0 * Math.PI / 360) * base / aspect) * 180 / Math.PI;
   camera.position.set(portrait ? 0.1 : 0.4, portrait ? 1.5 : 1.6, portrait ? 2.1 : 2.5);
   camera.lookAt(portrait ? 0.02 : 0.05, portrait ? 0.86 : 0.9, 0.05);
   camera.updateProjectionMatrix();
@@ -380,7 +466,8 @@ loader.load("/vrm/character.vrm", gltf => {
                    "leftShoulder", "rightShoulder", "leftUpperArm", "leftLowerArm", "leftHand", "rightUpperArm", "rightLowerArm", "rightHand"]) bones[n] = B(n);
   seat();
   const nm = vrm.meta?.title || vrm.meta?.name || "キャラクター";
-  $("#caster").textContent = `演奏：${nm}`; $("#whoName").textContent = nm; $("#avatar").textContent = nm.slice(0, 1);
+  $("#caster").textContent = `演奏：${nm}`; $("#avatar").textContent = nm.slice(0, 1); $("#avatar").title = nm;
+  performer = nm; if (st) renderSide();
   vrm.lookAt && (vrm.lookAt.target = lookTarget, vrm.lookAt.autoUpdate = true);
 }, undefined, e => { $("#err").textContent = `キャラを読み込めませんでした（data/character.vrm）: ${e.message || e}`; });
 
@@ -485,7 +572,7 @@ const lift = { l: 0.03, r: 0.03 };   // 手首を鍵盤からどれだけ上げ�
 const hand = { l: { x: 0.18, y: KEY_TOP + 0.05, z: KEY_Z - 0.03 }, r: { x: -0.15, y: KEY_TOP + 0.05, z: KEY_Z - 0.03 } };
 // 手の移動の計画：手は届く範囲（指を広げて 6〜7 鍵）なら動かさず指で取り、届かないときだけ
 // 次の音に間に合うように、少し持ち上げて弧を描いて移る
-const HALF = 0.07;
+const HALF = 0.07, REACH = HALF + 0.015;   // 手の中心から届く幅（片側）
 const plan = { l: { to: 0.18, from: 0.18, t0: 0, t1: 0, arc: 0 }, r: { to: -0.15, from: -0.15, t0: 0, t1: 0, arc: 0 } };
 const press = { l: [0, 0, 0, 0, 0], r: [0, 0, 0, 0, 0] };   // 指ごとの押し込み（-：持ち上げ、+：押す）
 const ease = u => u < 0.5 ? 2 * u * u : 1 - (-2 * u + 2) ** 2 / 2;
@@ -502,7 +589,10 @@ function react(m) {
     if (m.text.startsWith("♥")) { mood.happy = 1; mood.nod = 1; toast("♡ うれしい"); }
     else { mood.think = 1; toast("…弾き方を変えてみます"); }
   } else if (m.kind === "words") { mood.nod = 1; toast("うなずいた"); }
-  else if (m.kind === "save") toast("この曲を残しました");
+  else if (m.kind === "save") { toast("この曲を残しました"); loadRecs(); }
+  else if (m.kind === "listen") { mood.nod = 1; toast("その曲を聴いてきます…"); }
+  else if (m.kind === "learn") { mood.happy = 1; mood.nod = 1; toast("♪ 覚えました"); }
+  else if (m.kind === "warn") { mood.think = 1; toast(m.text.slice(0, 40)); }
 }
 let toastT;
 function toast(t) { const el = $("#msg"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
@@ -517,7 +607,9 @@ function update(dt, time) {
   const targets = { l: [], r: [] };
   for (const [t0, dur, p, vel, hd] of notes) {
     const age = h - t0;
-    if (age >= 0 && age < Math.min(dur, 0.45)) pressed.set(p, Math.max(pressed.get(p) || 0, vel));
+    // 鍵盤が沈むのは、どちらかの手が届くところだけ（手が次へ移ったあとの長い音は、ペダルで響かせている体で鍵盤を戻す）
+    const x = keyX(p), near = Math.min(Math.abs(x - hand.l.x), Math.abs(x - hand.r.x)) < REACH;
+    if (age >= 0 && age < Math.min(dur, 0.45) && near) pressed.set(p, Math.max(pressed.get(p) || 0, vel));
     if (age > -0.25 && age < Math.min(dur, 0.6)) targets[hd].push({ x: keyX(p), w: age < 0 ? 0.6 : 1 + vel / 127 });
     const id = `${t0}:${p}`;
     if (age >= 0 && age < 0.1 && !seen.has(id)) {
@@ -557,8 +649,8 @@ function update(dt, time) {
       if (tE - h > 0.25) xs.push(...held.map(n => keyX(n[2])));   // まだ先なら、いま押さえている音も手の中に
       const lo = Math.min(...xs), hi = Math.max(...xs);
       let c = P.to;
-      if (hi - lo > HALF * 2) c = (lo + hi) / 2;
-      else { if (hi > c + HALF) c = hi - HALF; if (lo < c - HALF) c = lo + HALF; }
+      // 手の中に収まっていなければ、音のまとまりの真ん中へ移る（端ぎりぎりに置くと、次の音でまたすぐ動くので）
+      if (hi > c + HALF - 0.01 || lo < c - HALF + 0.01) c = (lo + hi) / 2;
       if (Math.abs(c - P.to) > 0.008) {
         const dist = Math.abs(c - H.x);
         P.from = H.x; P.to = c; P.t0 = h;
@@ -676,7 +768,7 @@ function showNow(sec, h) {
     shownKey = key;
     $("#title").textContent = `曲 ${sec.piece} ・ ${PART[sec.part] ?? sec.part}`;
     $("#meta").textContent = `${sec.key} ・ ${sec.meter}/4 ・ ♩=${sec.bpm}`;
-    document.title = `♪ 曲 ${sec.piece} ・ ${sec.key} — Piano Improv`;
+    document.title = `♪ 曲 ${sec.piece} ・ ${sec.key} — Amane`;
     $("#chips").innerHTML = sec.chords.map(c => `<span class="chip">${c}</span>`).join("");
     // この曲のセクション（ここまでに作られた分）
     const mine = st.recent.filter(s => s.piece === sec.piece);
@@ -710,7 +802,15 @@ function frame() {
   lastUpdateMs = performance.now() - u0;
 }
 frame();
-window.__piano = { camera, scene, timing: () => ({ updateMs: lastUpdateMs }) };
+window.__piano = {
+  camera, scene, timing: () => ({ updateMs: lastUpdateMs }),
+  // 確かめ用：いま沈んでいる鍵盤と、それを弾く手の中心との距離（m）
+  reach: () => {
+    const h = heard();
+    return notes.filter(([t0, dur]) => h - t0 >= 0 && h - t0 < Math.min(dur, 0.45))
+      .map(([t0, dur, p, vel, hd]) => ({ p, hd, age: h - t0, d: Math.abs(keyX(p) - hand[hd].x), other: Math.abs(keyX(p) - hand[hd === "l" ? "r" : "l"].x), down: (keys.get(p)?.down ?? 0) > 0.5 }));
+  },
+};
 
 /* ================================================================ 操作 */
 async function post(path, body) {
@@ -721,21 +821,55 @@ function rate(r) { const h = listening ? heard() : null; post("/api/rate", h ===
 $("#good").onclick = () => rate(1);
 $("#bad").onclick = () => rate(-1);
 $("#next").onclick = () => post("/api/next");
+const togglePause = () => post(st?.paused ? "/api/resume" : "/api/pause");
+$("#pause").onclick = togglePause;
+$("#save").onclick = () => post("/api/save");
+const sayWords = async text => {
+  text = text.trim();
+  if (!text) return;
+  if (/^https?:\/\/\S+$/.test(text)) {                 // 曲の URL なら、その曲を聴いて曲調を覚える
+    const j = await post("/api/learn", { src: text });
+    if (j.error) toast(j.error);
+  } else post("/api/words", { text });
+};
+$("#words").onsubmit = e => { e.preventDefault(); sayWords($("#wordsText").value); $("#wordsText").value = ""; $("#wordsText").blur(); };
+const HINTS = ["もっと静かに", "雨の夜っぽく", "少し明るく", "ゆっくり", "印象派寄りに", "映画音楽寄りに", "3拍子で", "和風に"];
+$("#hints").innerHTML = HINTS.map(h => `<button type="button">${h}</button>`).join("");
+$("#hints").querySelectorAll("button").forEach(b => b.onclick = () => sayWords(b.textContent));
+async function loadRecs() {
+  try {
+    const list = await (await fetch("/api/recordings")).json();
+    $("#recs").innerHTML = list.length ? list.slice(0, 10).map(n => {
+      const m = n.match(/^\d{4}(\d{2})(\d{2})_(\d{2})(\d{2})\d{2}_piece(\d+)/);   // 20261120_193202_piece84.mid
+      const label = m ? `曲 ${m[5]}` : n.replace(/</g, "&lt;");
+      const when = m ? `${+m[1]}/${+m[2]} ${m[3]}:${m[4]}` : "";
+      return `<li><a href="/recordings/${encodeURIComponent(n)}" download title="${n.replace(/"/g, "&quot;")}"><b>${label}</b><span>${when} ・ MIDI</span></a></li>`;
+    }).join("") : `<li class="empty">まだありません。<kbd>s</kbd> でいまの曲を残せます</li>`;
+  } catch {}
+}
+loadRecs();
 $("#full").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.();
 $("#shot").onclick = () => {
   renderer.render(scene, camera);                       // 描いた直後に取り出す
   renderer.domElement.toBlob(b => {
     const a = document.createElement("a");
-    a.href = URL.createObjectURL(b); a.download = `piano-improv-${new Date().toISOString().slice(0, 19).replace(/[:T]/g, "")}.png`;
+    a.href = URL.createObjectURL(b); const d = new Date(), z = n => String(n).padStart(2, "0");
+    a.download = `amane-${d.getFullYear()}${z(d.getMonth() + 1)}${z(d.getDate())}-${z(d.getHours())}${z(d.getMinutes())}${z(d.getSeconds())}.png`;
     a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
     toast("この場面を保存しました");
   });
 };
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".pane").forEach(x => x.classList.toggle("on", x.id === `pane-${b.dataset.pane}`));
+});
 addEventListener("keydown", e => {
   if (e.target.closest("input,textarea")) return;
   if (e.key === "+" || e.key === "=") rate(1);
   else if (e.key === "-") rate(-1);
   else if (e.key === "n") post("/api/next");
+  else if (e.key === "p") togglePause();
+  else if (e.key === "s") post("/api/save");
   else if (e.key === "f") $("#full").click();
   else if (e.key === " ") { e.preventDefault(); toggleListening(); }
 });
