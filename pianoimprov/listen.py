@@ -27,7 +27,7 @@ import numpy as np
 from .reference import estimate
 
 MAX_SECONDS = 360          # 解析に使う長さ（頭から）。長い動画で CPU を使いすぎないため
-ONSETS_PER_BEAT_MAX = 3.25
+PULSE_DOUBLE = 2.0
 MAX_SOURCE_SECONDS = 1800  # これより長い動画は取りに行かない（作業用 BGM の 3 時間などを避ける）
 SR = 22050
 # 推定しない値：強弱（書き起こしの音量は録音・ミックスの音量に左右されるので使わない）、
@@ -102,8 +102,8 @@ def to_wav(src: Path, dst: Path, start: float = 0.0) -> Path:
     return dst
 
 
-def transcribe(wav: Path) -> list[tuple[float, float, int, float]]:
-    """[(開始秒, 終了秒, 音高, 強さ 0..1)]"""
+def transcribe(wav: Path, onset: float = 0.5, frame: float = 0.3) -> list[tuple[float, float, int, float]]:
+    """[(開始秒, 終了秒, 音高, 強さ 0..1)]。onset・frame は Basic Pitch のしきい値（下げると音を多く拾う）"""
     try:
         logging.getLogger().setLevel(logging.ERROR)
         with warnings.catch_warnings():
@@ -118,7 +118,7 @@ def transcribe(wav: Path) -> list[tuple[float, float, int, float]]:
         _MODEL = Model(onnx if onnx.exists() else ICASSP_2022_MODEL_PATH)
     with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):   # 「Predicting MIDI…」を出さない
         warnings.simplefilter("ignore")
-        _, _, events = predict(str(wav), _MODEL)
+        _, _, events = predict(str(wav), _MODEL, onset_threshold=onset, frame_threshold=frame)
     return [(float(s), float(e), int(p), float(a)) for s, e, p, a, *_ in events]
 
 
@@ -126,41 +126,99 @@ _MODEL = None
 
 
 def tempo(wav: Path) -> float:
-    """♩ の BPM。拍の取り違え（倍・半分）は、この生成器の範囲（46〜96）に入る方へ寄せる。"""
+    """♩ の BPM。拍の取り違え（倍・半分）は、この生成器の範囲（46〜96）に入る方へ寄せる。
+
+    librosa は速い曲を半分のテンポと読むことがある。音の立ち上がりの自己相関で、推定したテンポ T の周期より
+    倍の速さ 2T の周期の方がはっきり強ければ（比が PULSE_DOUBLE を超えたら）倍にする。
+    2T/T の比は、生成した 48 曲でテンポが当たったものが最大 1.45、ゆっくりで細かいアルペジオの録音が 1.36、
+    速いジャズの録音が 2.71 だった（docs/listen.md）。打鍵の詰まりで決めると、ゆっくりで細かい曲を倍と読んでしまった"""
     import librosa
     y, sr = librosa.load(str(wav), sr=SR, mono=True)
-    onset = librosa.onset.onset_strength(y=y, sr=sr)
-    bpm = float(np.atleast_1d(librosa.feature.tempo(onset_envelope=onset, sr=sr, start_bpm=60))[0])
+    hop = 512
+    onset = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
+    bpm = float(np.atleast_1d(librosa.feature.tempo(onset_envelope=onset, sr=sr, hop_length=hop, start_bpm=60))[0])
     while bpm > 120:
         bpm /= 2
     while bpm < 40:
         bpm *= 2
+    ac = librosa.autocorrelate(onset - onset.mean())
+    ac = ac / (ac[0] + 1e-9)
+    at = lambda b: ac[min(len(ac) - 1, int(round(60 / b * sr / hop)))]   # noqa: E731
+    if at(bpm) > 0 and at(bpm * 2) / at(bpm) > PULSE_DOUBLE:
+        bpm *= 2
     return bpm
 
 
-def analyze_audio(wav: Path) -> tuple[dict, dict]:
-    """（推定した好みの値, 途中の数値）"""
-    events = transcribe(wav)
+def beat_times(wav: Path, bpm: float) -> np.ndarray:
+    """拍の時刻（秒）。テンポは tempo() で決めたものに固定して、拍の位置だけを librosa に探させる。"""
+    import librosa
+    y, sr = librosa.load(str(wav), sr=SR, mono=True)
+    hop = 512
+    onset = librosa.onset.onset_strength(y=y, sr=sr, hop_length=hop)
+    _, beats = librosa.beat.beat_track(onset_envelope=onset, sr=sr, hop_length=hop, bpm=bpm, units="time")
+    return np.asarray(beats, dtype=float)
+
+
+def loudness_arc(y: np.ndarray, sr: int = SR) -> tuple[float, float]:
+    """（音量の幅, 盛り上がり）dB。4 秒ごとの音量で、幅は上位 10% − 下位 10%（最後の 8 秒を除く）、
+    盛り上がりは山（3 窓の移動平均の最大）− 最初の 12 秒の平均。tools/form_stats.py と同じ物差し。"""
+    W = 4.0
+    rms = np.array([20 * np.log10(np.sqrt(np.mean(y[int(t * sr):int((t + W) * sr)] ** 2)) + 1e-9)
+                    for t in np.arange(0, len(y) / sr - W / 2, W)])
+    if len(rms) < 4:
+        return 0.0, 0.0
+    body = rms[: max(3, len(rms) - 2)]
+    body = body[body > -50]
+    smooth = np.convolve(rms, np.ones(3) / 3, mode="same")
+    width = float(np.percentile(body, 90) - np.percentile(body, 10)) if len(body) > 2 else 0.0
+    return width, float(smooth[1:-1].max() - rms[: max(1, int(12 / W))].mean())
+
+
+# 盛り上がり（dB）→ drama。この生成器で drama を 0 / 1 に固定して 8 曲ずつ弾くと、盛り上がりの中央値は
+# +3.3 / +10.7dB だった（tools/form_stats.py --set drama=0|1）。その間を直線で
+DRAMA_DB = (3.3, 10.7)
+# 1 拍あたりの打鍵 → ripple。（ripple = 0 の打鍵数, 1 の打鍵数）
+RIPPLE_OPB = (2.44, 4.62)
+
+
+def analyze_audio(wav: Path, events: list | None = None) -> tuple[dict, dict]:
+    """（推定した好みの値, 途中の数値）。events は書き起こし済みなら渡す（同じ音声を 2 度書き起こさない）"""
+    events = transcribe(wav) if events is None else events
     if len(events) < 32:
         raise ListenError("音が少なすぎて、曲調を読めませんでした")
     bpm = tempo(wav)
-    # 速い曲を遅いテンポ（半分・2/3）と取り違えると、1 拍に打鍵が詰まる。生成した 48 曲でテンポが当たったものは
-    # 拍あたり 3.13 以下、取り違えた 2 曲は 3.4〜3.6、速いジャズは 5.2 だった。超えたら倍にする
-    # （この生成器のテンポは ♩=96 が上限なので、それより速ければ 1.5 倍でも 2 倍でも同じ値になる）
-    onsets = np.unique(np.round(np.array([e[0] for e in events]) / 0.06))
-    span = max(e[1] for e in events) - min(e[0] for e in events)
-    if span > 0 and len(onsets) / span * 60 / bpm > ONSETS_PER_BEAT_MAX:
-        bpm *= 2
     k = bpm / 60
     tnotes = sorted((s * k, (e - s) * k, p, int(round(20 + a * 107)), 0) for s, e, p, a in events)
     raw = estimate(tnotes, bpm, None, velocity=False, clip=False)
+    import librosa
+    y, _ = librosa.load(str(wav), sr=SR, mono=True)
+    _, build = loudness_arc(y)
+    if len(y) / SR >= 60:              # 短い断片では曲の弧が分からない
+        raw["drama"] = (build - DRAMA_DB[0]) / (DRAMA_DB[1] - DRAMA_DB[0])
+    # 伴奏の細かさ：1 拍あたりの打鍵の時刻の数（0.05 秒以内は同じ打鍵）
+    on = np.unique(np.round(np.array([s for s, _, _, _ in events]) / 0.05))
+    span = max(e for _, e, _, _ in events) - min(s for s, _, _, _ in events)
+    opb = len(on) / max(span, 1.0) * 60 / bpm
+    raw["ripple"] = (opb - RIPPLE_OPB[0]) / (RIPPLE_OPB[1] - RIPPLE_OPB[0])
     est = {}
     for key, v in raw.items():
         if key in SKIP:
             continue
         a, b = FIX.get(key, (1.0, 0.0))
         est[key] = float(min(1, max(0, a * v + b)))
-    return est, {"bpm": round(bpm, 1), "notes": len(events), "raw": raw}
+    from .habits import blend, habits, melody_line, to_beats
+    from .harmony import key_of, progression
+    try:
+        prog = progression(events, bpm)
+    except Exception:  # noqa: BLE001  進行が読めなくても、曲調の推定は使う
+        prog = None
+    try:
+        tonic, minor = (prog["tonic"], prog["minor"]) if prog else key_of(events)
+        mel = habits(to_beats(melody_line(events), beat_times(wav, bpm)), tonic, minor)
+        mel = blend(mel) if mel else None
+    except Exception:  # noqa: BLE001  旋律の癖も同じ
+        mel = None
+    return est, {"bpm": round(bpm, 1), "notes": len(events), "raw": raw, "progression": prog, "melody": mel}
 
 
 def listen(src: str) -> tuple[dict, dict]:
@@ -178,6 +236,33 @@ def listen(src: str) -> tuple[dict, dict]:
         start = 10.0 if _duration(f) > MAX_SECONDS * 0.5 else 0.0
         est, info = analyze_audio(to_wav(f, tmp / "x.wav", start))
     return est, {"title": title, **info}
+
+
+def song_wav(src: str, dst: Path) -> tuple[Path, str]:
+    """曲（URL か音声ファイル）を、頭から（MAX_SECONDS まで）wav に。（wav, 題名）"""
+    tmp = dst.parent
+    if is_url(src):
+        f, title = fetch(src.strip(), tmp)
+    else:
+        f = Path(src).expanduser()
+        if not f.is_file():
+            raise ListenError(f"ファイルがありません: {src}")
+        title = f.stem
+    return to_wav(f, dst, 0.0), title
+
+
+def transcribe_song(src: str) -> tuple[list[tuple[float, float, int, float]], dict, dict, list[list] | None]:
+    """曲を頭から（MAX_SECONDS まで）書き起こす。弾くため（耳コピ）。
+    （Basic Pitch の音符 [(開始秒, 終了秒, 音高, 強さ)], 推定した好みの値, {"title", "bpm", "progression", "melody", …},
+      Transkun の音符 [開始秒, 長さ秒, 音高, 強さ]（入っていなければ None））
+    曲調の推定は Basic Pitch の書き起こしで換算を決めてあるので、推定には Basic Pitch を使う。"""
+    from .cover import has_transkun, transcribe_piano
+    with tempfile.TemporaryDirectory(prefix="amane-perform-") as tmp:
+        wav, title = song_wav(src, Path(tmp) / "x.wav")
+        events = transcribe(wav)
+        est, info = analyze_audio(wav, events)
+        piano = transcribe_piano(wav) if has_transkun() else None
+    return events, est, {"title": title, **info}, piano
 
 
 def _duration(f: Path) -> float:

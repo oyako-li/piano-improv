@@ -35,7 +35,7 @@ button{font:inherit;color:inherit}
 .pill:hover{border-color:rgba(150,200,235,.4)}
 /* 舞台 */
 .stage{position:relative;flex:1;min-height:150px;border-radius:14px;overflow:hidden;background:#061321;border:1px solid var(--line)}
-.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}
 .corner{position:absolute;width:34px;height:34px;border:2px solid rgba(143,211,255,.55);pointer-events:none}
 .corner.tl{top:14px;left:14px;border-right:0;border-bottom:0}.corner.tr{top:14px;right:14px;border-left:0;border-bottom:0}
 .corner.bl{bottom:14px;left:14px;border-right:0;border-top:0}.corner.br{bottom:14px;right:14px;border-left:0;border-top:0}
@@ -101,6 +101,18 @@ button{font:inherit;color:inherit}
 .taste .bar{height:4px;border-radius:2px;background:rgba(150,200,235,.12);position:relative}
 .taste .bar i{position:absolute;top:-3px;width:10px;height:10px;border-radius:50%;background:var(--accent2);transform:translateX(-50%)}
 .taste .n{color:var(--muted);font-size:12px;margin-top:4px}
+.snaps{display:grid;gap:6px;min-height:0;overflow:auto}
+.snaps form{display:flex;gap:6px}
+.snaps input{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--ink);padding:5px 9px;font-size:12px}
+.snaps button{background:var(--panel2);border:0;border-radius:8px;color:var(--ink);padding:5px 10px;font-size:12px;cursor:pointer;white-space:nowrap}
+.snaps button:hover{filter:brightness(1.2)}
+.snaps h4{margin:6px 0 0;font-size:11px;font-weight:500;color:var(--muted)}
+.snaps ul{list-style:none;margin:0;padding:0;display:grid;gap:4px}
+.snaps li{display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:10px;padding:5px 6px 5px 12px;font-size:12px}
+.snaps li b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.snaps li span{color:var(--muted);font-family:var(--mono);font-size:11px}
+.snaps li .x{background:none;color:var(--muted);padding:5px 6px}
+.snaps .empty{color:var(--muted);background:none;padding:2px}
 .keys{flex:none;color:var(--muted);font-size:11px;line-height:1.9;margin-top:auto}
 /* 言葉で伝える */
 .words{flex:none;display:flex;gap:8px;padding:10px 12px 12px;border-top:1px solid var(--line)}
@@ -215,6 +227,11 @@ kbd{font:11px var(--mono);border:1px solid var(--line);border-bottom-width:2px;b
     </div>
     <div class="pane chat on" id="pane-chat"><ul class="log" id="log"></ul></div>
     <div class="pane" id="pane-taste"><div class="taste" id="taste"></div>
+      <div class="snaps" id="snaps">
+        <form id="snapForm" autocomplete="off"><input id="snapName" placeholder="名前（例：雨の夜）" aria-label="しまう好みの名前" maxlength="60"><button type="submit" title="いまの好みを名前を付けてしまう">いまの好みをしまう</button></form>
+        <h4>しまった好み</h4><ul id="snapSaved"><li class="empty">まだありません</li></ul>
+        <h4>その日の終わりの好みに戻す</h4><ul id="snapDays"></ul>
+      </div>
       <div class="keys"><kbd>+</kbd> いい ・ <kbd>-</kbd> 微妙 ・ <kbd>n</kbd> 次の曲 ・ <kbd>p</kbd> 止める/再開 ・ <kbd>s</kbd> 曲を残す ・ <kbd>Space</kbd> 聴く ・ <kbd>f</kbd> 全画面</div></div>
     <div class="pane" id="pane-recs"><ul class="recs" id="recs"><li class="empty">まだありません</li></ul></div>
     <div class="hints" id="hints"></div>
@@ -266,6 +283,10 @@ function stopListening() {
 const toggleListening = () => listening ? stopListening() : startListening();
 $("#start").onclick = startListening;
 $("#play").onclick = toggleListening;
+$("#stage").addEventListener("click", e => {             // 画面のクリックで聴く・止める（YouTube と同じ）
+  if (e.target.closest("button,a,input")) return;
+  toggleListening();
+});
 $("#vol").oninput = e => { audio.volume = +e.target.value; };
 audio.onerror = () => { if (listening) { listening = false; setTimeout(startListening, 1500); } };
 
@@ -293,7 +314,7 @@ function chatLines(m) {
   if (m.kind === "warn" && q && !/から覚え/.test(m.text)) return [you(q[1]), her(q[2].replace(/^は/, ""))];
   if (m.kind === "rate") return [you(m.text.startsWith("♥") ? "♡ いい" : "微妙"), her(m.text.replace(/^[♥×]\s*/, ""))];
   if (m.kind === "save") return [her(m.text.replace(/^保存しました: ?/, "この曲を残しました：").replace(/\.mid$/, ""))];
-  if (m.kind === "listen" || m.kind === "learn" || m.kind === "warn") return [her(m.text)];
+  if (m.kind === "listen" || m.kind === "learn" || m.kind === "warn" || m.kind === "snap") return [her(m.text)];
   return [sys(m.text)];
 }
 function renderSide() {
@@ -351,8 +372,8 @@ function resize() {
   const base = portrait ? 4 / 5 : 16 / 9, fov0 = portrait ? 30 : 21, aspect = w / h;
   camera.fov = aspect >= base ? fov0
     : 2 * Math.atan(Math.tan(fov0 * Math.PI / 360) * base / aspect) * 180 / Math.PI;
-  camera.position.set(portrait ? 0.1 : 0.4, portrait ? 1.5 : 1.6, portrait ? 2.1 : 2.5);
-  camera.lookAt(portrait ? 0.02 : 0.05, portrait ? 0.86 : 0.9, 0.05);
+  camera.position.set(portrait ? 0.06 : 0.22, portrait ? 1.5 : 1.55, portrait ? 2.1 : 2.45);
+  camera.lookAt(0, portrait ? 0.88 : 0.93, 0.05);
   camera.updateProjectionMatrix();
 }
 new ResizeObserver(resize).observe(stage); resize();
@@ -384,11 +405,21 @@ function keyX(p) {
   return (MID - whiteIndex(p)) * KEY_W;
 }
 const piano = new THREE.Group(); scene.add(piano);
-const lacquer = new THREE.MeshStandardMaterial({ color: 0x0b0f14, roughness: 0.18, metalness: 0.4 });
+const lacquer = new THREE.MeshStandardMaterial({ color: 0x121a22, roughness: 0.22, metalness: 0.5 });
 const body = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52 + 0.08, 0.05, 0.27), lacquer);
 body.position.set(0, KEY_TOP - 0.035, KEY_Z + 0.005); piano.add(body);
 const back = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52 + 0.08, 0.035, 0.04), lacquer);
 back.position.set(0, KEY_TOP + 0.012, KEY_Z + 0.11); piano.add(back);
+// 黒い塊に見えないよう、縁に細い金属の線と、鍵盤の奥に赤いフェルト、手前の面に淡い光の線を入れる
+const trim = new THREE.MeshStandardMaterial({ color: 0x8fa9bd, roughness: 0.25, metalness: 0.9 });
+const W = KEY_W * 52 + 0.08;
+for (const [y, z] of [[KEY_TOP + 0.03, KEY_Z + 0.13], [KEY_TOP - 0.01, KEY_Z + 0.141], [KEY_TOP - 0.06, KEY_Z + 0.141]]) {
+  const t = new THREE.Mesh(new THREE.BoxGeometry(W + 0.004, 0.004, 0.004), trim); t.position.set(0, y, z); piano.add(t);
+}
+const felt = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52, 0.006, 0.012), new THREE.MeshStandardMaterial({ color: 0x5a0f18, roughness: 0.9 }));
+felt.position.set(0, KEY_TOP + 0.006, KEY_Z + 0.082); piano.add(felt);
+const line = new THREE.Mesh(new THREE.BoxGeometry(W * 0.8, 0.003, 0.002), new THREE.MeshBasicMaterial({ color: 0x58c8ff, transparent: true, opacity: 0.55 }));
+line.position.set(0, KEY_TOP - 0.035, KEY_Z + 0.142); piano.add(line);
 for (const sx of [-1, 1]) {
   const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2, 0.22), lacquer);
   leg.position.set(sx * (KEY_W * 26 + 0.025), KEY_TOP - 0.06 - 1, KEY_Z + 0.005); piano.add(leg);
@@ -507,7 +538,7 @@ function seat() {
   for (const s of ["left", "right"]) FINGERS.forEach((f, fi) => ["Proximal", "Intermediate", "Distal"].forEach(j => {
     const b = vrm.humanoid.getNormalizedBoneNode(`${s}${f}${j === "Proximal" && f === "Thumb" ? "Metacarpal" : j}`) || vrm.humanoid.getNormalizedBoneNode(`${s}${f}${j}`);
     if (!b) return;
-    const k = f === "Thumb" ? 0.12 : { Proximal: 0.5, Intermediate: 0.55, Distal: 0.3 }[j];
+    const k = f === "Thumb" ? 0.1 : { Proximal: 0.3, Intermediate: 0.4, Distal: 0.2 }[j];   // 力を抜いて、軽く丸める
     const sign = -F * (s === "left" ? 1 : -1);          // この向きで手のひら側へ曲がる（逆だと反り返る）
     fingerBones.push({ b, side: s, fi, j, sign, base: sign * k });
   }));
@@ -552,8 +583,8 @@ function orientHand(side) {
   H.quaternion.copy(rest[`${side}Hand`]);
   H.updateMatrixWorld(true);
   const w = H.getWorldPosition(new THREE.Vector3());
-  // 1) 指の向き：前（客席側 +Z）へ、少し下
-  const want = new THREE.Vector3(0, -0.35, 1).normalize();
+  // 1) 指の向き：前（客席側 +Z）へ、ほんの少しだけ下（手の甲がほぼ水平で、鍵盤に添える形）
+  const want = new THREE.Vector3(0, -0.12, 1).normalize();
   aimBone(H, mid.getWorldPosition(new THREE.Vector3()), w.clone().add(want));
   // 2) 指の向きを軸にひねって、人差し指〜小指の並びを水平にする（手のひらが下を向く）
   const f = mid.getWorldPosition(new THREE.Vector3()).sub(w).normalize();
@@ -581,6 +612,7 @@ function fingerFor(hd, x, cx) {
   const off = (cx - x) / 0.024;                         // 白鍵何本ぶん高いか
   return clamp(Math.round(hd === "r" ? off + 2 : 2 - off), 0, 4);
 }
+let bodyX = 0;   // 体（と椅子）の左右の位置。弾いている手の方へゆっくり寄る
 let mood = { happy: 0, think: 0, nod: 0 }, blinkT = 2, blinkV = 0, energy = 0;
 const seen = new Set();
 
@@ -593,6 +625,7 @@ function react(m) {
   else if (m.kind === "listen") { mood.nod = 1; toast("その曲を聴いてきます…"); }
   else if (m.kind === "learn") { mood.happy = 1; mood.nod = 1; toast("♪ 覚えました"); }
   else if (m.kind === "warn") { mood.think = 1; toast(m.text.slice(0, 40)); }
+  else if (m.kind === "snap") { mood.nod = 1; toast(m.text.replace(/（.*/, "").slice(0, 40)); loadSnaps(); }
 }
 let toastT;
 function toast(t) { const el = $("#msg"); el.textContent = t; el.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => el.classList.remove("show"), 2200); }
@@ -704,7 +737,11 @@ function update(dt, time) {
   const bpm = sec?.bpm || 60, meter = sec?.meter || 4;
   const phase = (h * bpm / 60) / meter * Math.PI * 2;
   const sway = paused ? 0.01 : 0.035;
-  const lean = (hand.l.x + hand.r.x) / 2;
+  // 手のまとまりの方へ、体ごと椅子の上で寄る（腕だけ伸ばすと、肘が横に張り、反対の腕が胸の前を横切る）
+  const mid = (hand.l.x + hand.r.x) / 2;
+  bodyX = lerp(bodyX, paused ? 0 : clamp(mid * 0.7, -0.16, 0.16), clamp(dt * 1.2, 0, 1));
+  vrm.scene.position.x = bodyX; bench.position.x = bodyX;
+  const lean = mid - bodyX;
   // x：前かがみ（＋で下を向く）、y：左右を向く、z：左右に傾く
   bones.spine.rotation.set(F * (paused ? 0.02 : 0.06 + Math.sin(phase * 2) * 0.01), lean * 0.5, F * Math.sin(phase) * sway);
   bones.chest && bones.chest.rotation.set(F * (0.02 + Math.sin(time * 1.3) * 0.008), lean * 0.4, F * Math.sin(phase + 0.6) * sway * 0.6);
@@ -718,20 +755,24 @@ function update(dt, time) {
 
   vrm.scene.updateMatrixWorld(true);
   const off = vrm.scene.position;
-  solveArm("left", new THREE.Vector3(hand.l.x, hand.l.y, hand.l.z), new THREE.Vector3(hand.l.x + 0.25, hand.l.y - 0.6, -0.35));
-  solveArm("right", new THREE.Vector3(hand.r.x, hand.r.y, hand.r.z), new THREE.Vector3(hand.r.x - 0.25, hand.r.y - 0.6, -0.35));
+  // 肘は下へ、少しだけ外へ（脇を軽く開けた形）
+  solveArm("left", new THREE.Vector3(hand.l.x, hand.l.y, hand.l.z), new THREE.Vector3(bodyX + 0.32, hand.l.y - 0.5, off.z - 0.1));
+  solveArm("right", new THREE.Vector3(hand.r.x, hand.r.y, hand.r.z), new THREE.Vector3(bodyX - 0.32, hand.r.y - 0.5, off.z - 0.1));
   // 手のひらを下に向け、手首を少し上げる
   orientHand("left"); orientHand("right");
   for (const fb of fingerBones) fb.b.rotation.z = fb.base;
   vrm.scene.updateMatrixWorld(true);
   if (!paused) for (const [hd, side] of [["l", "left"], ["r", "right"]]) {
-    // いちばん低い指先（末節の骨の先）が、鍵盤の上面のすぐ上に来るように（押す動きを足す前の形で測る）
+    // いちばん低い指先が、鍵盤の上面（白鍵の上面は keyTop + 0.01）のすぐ上に来るように（押す動きを足す前の形で測る）。
+    // 骨の位置は末節の付け根（第一関節）なので、指先はそこから中節と同じ向きに、末節の長さ（中節の 0.8 倍とみる）だけ先
     let low = Infinity;
     for (const f of ["Index", "Middle", "Ring", "Little"]) {
-      const d = vrm.humanoid.getNormalizedBoneNode(`${side}${f}Distal`);
-      if (d) low = Math.min(low, d.getWorldPosition(_v).y);
+      const d = vrm.humanoid.getNormalizedBoneNode(`${side}${f}Distal`), m = vrm.humanoid.getNormalizedBoneNode(`${side}${f}Intermediate`);
+      if (!d || !m) continue;
+      const dp = d.getWorldPosition(new THREE.Vector3()), mp = m.getWorldPosition(_v);
+      low = Math.min(low, dp.y + (dp.y - mp.y) * 0.8);
     }
-    if (low < Infinity) lift[hd] = clamp(lift[hd] + (keyTop + 0.012 - low) * 0.3, 0.0, 0.12);
+    if (low < Infinity) lift[hd] = clamp(lift[hd] + (keyTop + 0.016 - low) * 0.3, 0.0, 0.15);
   }
   for (const fb of fingerBones) {
     const e = press[fb.side === "left" ? "l" : "r"][fb.fi];
@@ -755,8 +796,8 @@ function update(dt, time) {
 }
 
 /* ================================================================ 画面の文字 */
-const PART = { intro: "イントロ", outro: "アウトロ", "A'": "A′" };
-let shownKey = "";
+const PART = { cover: "耳コピ", intro: "イントロ", outro: "アウトロ", "A'": "A′", "B'": "B′", S: "サビ", "S'": "サビ′" };
+let shownKey = "", partsPiece = null;
 function showNow(sec, h) {
   $("#live").classList.toggle("off", !listening);
   if (!sec) {
@@ -766,21 +807,25 @@ function showNow(sec, h) {
   const key = `${sec.piece}:${sec.part}:${sec.start}`;
   if (key !== shownKey) {
     shownKey = key;
-    $("#title").textContent = `曲 ${sec.piece} ・ ${PART[sec.part] ?? sec.part}`;
+    $("#title").textContent = sec.part === "cover" ? `「${sec.title}」耳コピ` : `曲 ${sec.piece} ・ ${PART[sec.part] ?? sec.part}`;
     $("#meta").textContent = `${sec.key} ・ ${sec.meter}/4 ・ ♩=${sec.bpm}`;
     document.title = `♪ 曲 ${sec.piece} ・ ${sec.key} — Amane`;
     $("#chips").innerHTML = sec.chords.map(c => `<span class="chip">${c}</span>`).join("");
-    // この曲のセクション（ここまでに作られた分）
-    const mine = st.recent.filter(s => s.piece === sec.piece);
-    $("#parts").innerHTML = mine.map(s => `<span data-s="${s.start}"><i></i></span>`).join("");
+  }
+  // この曲のセクションの並び（曲の頭から全部）。曲が変わったときだけ組み直す。
+  // 幅は小節数のおおよそ（イントロ 2〜4・アウトロ 3・ほかは 8 小節）
+  if (sec.piece !== partsPiece) {
+    partsPiece = sec.piece;
+    const plan = sec.plan?.length ? sec.plan : [sec.part];
+    $("#parts").innerHTML = plan.map(p => `<span style="flex-grow:${p === "intro" || p === "outro" ? 3 : 8}" title="${PART[p] ?? p}"><i></i></span>`).join("");
   }
   const u = clamp((h - sec.start) / (sec.end - sec.start), 0, 1);
   const ci = Math.min(sec.chords.length - 1, Math.floor(u * sec.chords.length));
   document.querySelectorAll("#chips .chip").forEach((c, i) => c.classList.toggle("on", i === ci));
-  document.querySelectorAll("#parts span").forEach(el => {
-    const s0 = +el.dataset.s;
-    el.classList.toggle("done", s0 < sec.start);
-    el.querySelector("i").style.width = s0 === sec.start ? `${u * 100}%` : "0";
+  const idx = sec.index ?? 0;
+  document.querySelectorAll("#parts span").forEach((el, i) => {
+    el.classList.toggle("done", i < idx);
+    el.querySelector("i").style.width = i === idx ? `${u * 100}%` : "0";
   });
   $("#partLbl").textContent = `${PART[sec.part] ?? sec.part}　${Math.floor(h - sec.start)} / ${Math.round(sec.end - sec.start)} 秒`;
   const s = Math.max(0, Math.floor(h));
@@ -830,7 +875,10 @@ const sayWords = async text => {
   if (/^https?:\/\/\S+$/.test(text)) {                 // 曲の URL なら、その曲を聴いて曲調を覚える
     const j = await post("/api/learn", { src: text });
     if (j.error) toast(j.error);
-  } else post("/api/words", { text });
+  } else {                                              // 「演奏して https://…」も、サーバーが URL を拾う
+    const j = await post("/api/words", { text });
+    if (j.error) toast(j.error);
+  }
 };
 $("#words").onsubmit = e => { e.preventDefault(); sayWords($("#wordsText").value); $("#wordsText").value = ""; $("#wordsText").blur(); };
 const HINTS = ["もっと静かに", "雨の夜っぽく", "少し明るく", "ゆっくり", "印象派寄りに", "映画音楽寄りに", "3拍子で", "和風に"];
@@ -848,6 +896,36 @@ async function loadRecs() {
   } catch {}
 }
 loadRecs();
+/* 好みをしまう・呼び出す（data/taste.db と、記録から作り直す過去の時点） */
+const when = t => { const d = new Date(t * 1000), z = n => String(n).padStart(2, "0"); return `${d.getMonth() + 1}/${d.getDate()} ${z(d.getHours())}:${z(d.getMinutes())}`; };
+async function loadSnaps() {
+  try {
+    const j = await (await fetch("/api/snapshots")).json();
+    $("#snapSaved").innerHTML = j.saved.length ? j.saved.map(s =>
+      `<li><b title="${esc(s.name)}">${esc(s.name)}</b><span>${s.upto ? when(s.upto) : "初期"}</span><button data-load="${s.id}" title="この好みで弾く（次のセクションから）">呼び出す</button><button class="x" data-del="${s.id}" title="消す" aria-label="消す">✕</button></li>`).join("")
+      : `<li class="empty">まだありません。名前を付けて、いまの好みをしまえます</li>`;
+    $("#snapDays").innerHTML = j.history.length ? j.history.slice(0, 7).map(h =>
+      `<li><b>${h.day.slice(5).replace("-", "/")}</b><span>${when(h.at).split(" ")[1]} 時点</span><button data-at="${h.at}" title="この時点の好みで弾く（次のセクションから）">戻す</button></li>`).join("")
+      : `<li class="empty">まだ記録がありません</li>`;
+  } catch {}
+}
+$("#snaps").addEventListener("click", async e => {
+  const b = e.target.closest("button[data-load],button[data-del],button[data-at]");
+  if (!b) return;
+  if (b.dataset.del) {
+    if (!confirm("この好みを消しますか？（元に戻せません）")) return;
+    await post("/api/snapshots/delete", { id: +b.dataset.del }); loadSnaps();
+  } else {
+    const j = await post("/api/snapshots/load", b.dataset.load ? { id: +b.dataset.load } : { at: +b.dataset.at });
+    if (j.error) toast(j.error);
+  }
+});
+$("#snapForm").onsubmit = async e => {
+  e.preventDefault();
+  const j = await post("/api/snapshots", { name: $("#snapName").value });
+  if (j.error) toast(j.error); else $("#snapName").value = "";
+};
+loadSnaps();
 $("#full").onclick = () => document.fullscreenElement ? document.exitFullscreen() : stage.requestFullscreen?.();
 $("#shot").onclick = () => {
   renderer.render(scene, camera);                       // 描いた直後に取り出す

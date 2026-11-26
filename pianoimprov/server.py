@@ -9,12 +9,18 @@
   GET  /character            / へ移動（前の URL）
   GET  /vrm/character.vrm    キャラのモデル（data/character.vrm か環境変数 PIANO_VRM。公開しない）
   GET  /api/recordings       保存した MIDI の一覧
+  GET  /api/snapshots        しまった好み（saved）と、記録から呼び出せる過去の時点（history）
+  GET  /api/taste?at=        その時刻（epoch 秒、省略でいま）の好み
   GET  /recordings/<name>    保存した MIDI のダウンロード
   POST /api/rate     {"r": 1, "at": 12.3}  評価（-2..2）。at は聴いた時刻（配信の遅れの補正、省略可）
   POST /api/words    {"text": "..."}   言葉の指示
   POST /api/learn    {"src": "https://youtu.be/..."}  その曲を聴いて曲調へ好みを寄せる（YouTube・ニコニコ・SoundCloud）
+  POST /api/perform  {"src": "https://youtu.be/..."}  その曲を書き起こして弾く（耳コピ）。そのあとはその曲に寄せて即興する
   POST /api/param    {"name": "tempo", "value": 0.3}
   POST /api/next | /api/save | /api/pause | /api/resume
+  POST /api/snapshots         {"name": "雨の夜", "at": 1764000000}  好みをしまう（at は省略でいま）
+  POST /api/snapshots/load    {"id": 3} か {"at": 1764000000}       しまった好み・過去の時点の好みを呼び出す
+  POST /api/snapshots/delete  {"id": 3}
 """
 from __future__ import annotations
 
@@ -22,6 +28,7 @@ import json
 import mimetypes
 import os
 import queue
+import re
 import shutil
 import subprocess
 import threading
@@ -36,6 +43,10 @@ from .engine import Engine
 from .style import PARAMS
 
 STATIC = Path(__file__).resolve().parent / "web"
+
+
+# 曲の URL に添える、頼み方だけの言葉（これだけなら言葉の指示としては扱わない）
+PLAY_WORDS = r"(この曲|これ|の曲|みたいな|みたいに|っぽい|っぽく|風に|風の|感じで|演奏|弾いて|ひいて|弾く|して|ください|下さい|お願い|を|で|に|の|[、。,.!！?？\s　])"
 
 
 def make_handler(eng: Engine):
@@ -103,6 +114,17 @@ def make_handler(eng: Engine):
                 self._json([{"name": k, "label": d, "lo": a, "hi": b} for k, (d, a, b, _) in PARAMS.items()])
             elif path == "/api/recordings":
                 self._json(eng.recordings())
+            elif path == "/api/snapshots":
+                self._json(eng.snapshot_list())
+            elif path == "/api/taste":
+                q = dict(x.split("=", 1) for x in self.path.partition("?")[2].split("&") if "=" in x)
+                try:
+                    at = float(q["at"]) if q.get("at") else None
+                except ValueError:
+                    return self._json({"error": "at は epoch 秒"}, 400)
+                st = eng.taste.state(at)
+                self._json({"at": at, "mu": st["mu"], "n": st["n"], "refs": st["refs"],
+                            "sd": {k: round(v ** -0.5, 4) for k, v in st["prec"].items()}})
             elif path.startswith("/recordings/"):
                 name = Path(path).name
                 f = eng.data / "recordings" / name
@@ -197,9 +219,24 @@ def make_handler(eng: Engine):
                     ok = eng.rate(r, at=float(at) if at is not None else None)
                     return self._json({"ok": ok} if ok else {"error": "まだ何も鳴っていません"}, 200 if ok else 409)
                 if path == "/api/words":
-                    text = str(b.get("text", "")).strip()[:200]
+                    text = str(b.get("text", "")).strip()[:600]
                     if not text:
                         return self._json({"error": "text is empty"}, 400)
+                    # 「演奏して https://…」のように言葉に曲の URL が入っていたら、その曲を聴いて寄せる。
+                    # 残りの言葉が「演奏して」「っぽく」だけでなければ、言葉の指示としても受ける
+                    m = re.search(r"https?://[^\s　]+", text)
+                    if m:
+                        from .listen import allowed_url
+                        if not allowed_url(m.group(0)):
+                            return self._json({"error": "YouTube・ニコニコ・SoundCloud の URL だけ渡せます"}, 400)
+                        rest = (text[:m.start()] + " " + text[m.end():]).strip()
+                        # 「演奏して」「弾いて」は、その曲を耳コピで弾く。「っぽく」「みたいに」はその曲に寄せて即興する
+                        cover = re.search(r"演奏|弾いて|ひいて|弾く|弾け|耳コピ", rest) and not re.search(r"っぽ|みたい|風|寄せ|雰囲気", rest)
+                        threading.Thread(target=eng.perform if cover else eng.learn, args=(m.group(0),), daemon=True).start()
+                        if re.sub(PLAY_WORDS, "", rest):
+                            threading.Thread(target=eng.words, args=(rest[:200],), daemon=True).start()
+                        return self._json({"ok": True, "perform" if cover else "learn": m.group(0)})
+                    text = text[:200]
                     threading.Thread(target=eng.words, args=(text,), daemon=True).start()
                     return self._json({"ok": True})
                 if path == "/api/learn":
@@ -208,6 +245,13 @@ def make_handler(eng: Engine):
                     if not allowed_url(src):
                         return self._json({"error": "YouTube・ニコニコ・SoundCloud の URL だけ渡せます"}, 400)
                     threading.Thread(target=eng.learn, args=(src,), daemon=True).start()
+                    return self._json({"ok": True})
+                if path == "/api/perform":
+                    from .listen import allowed_url
+                    src = str(b.get("src", "")).strip()[:500]
+                    if not allowed_url(src):
+                        return self._json({"error": "YouTube・ニコニコ・SoundCloud の URL だけ渡せます"}, 400)
+                    threading.Thread(target=eng.perform, args=(src,), daemon=True).start()
                     return self._json({"ok": True})
                 if path == "/api/param":
                     eng.set_param(str(b["name"]), float(b["value"]))
@@ -219,6 +263,19 @@ def make_handler(eng: Engine):
                     p = eng.save_current()
                     return self._json({"ok": True, "file": p.name} if p else {"error": "まだ何も鳴っていません"},
                                       200 if p else 409)
+                if path == "/api/snapshots":
+                    at = b.get("at")
+                    sid = eng.snapshot_save(str(b.get("name", "")), float(at) if at is not None else None)
+                    return self._json({"ok": True, "id": sid})
+                if path == "/api/snapshots/load":
+                    if b.get("id") is not None:
+                        ok = eng.snapshot_load(sid=int(b["id"]))
+                    else:
+                        ok = eng.snapshot_load(at=float(b["at"]))
+                    return self._json({"ok": True} if ok else {"error": "その好みはありません"}, 200 if ok else 404)
+                if path == "/api/snapshots/delete":
+                    ok = eng.snapshots.delete(int(b["id"]))
+                    return self._json({"ok": ok}, 200 if ok else 404)
                 if path == "/api/pause":
                     eng.pause()
                     return self._json({"ok": True})

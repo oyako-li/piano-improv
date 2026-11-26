@@ -18,6 +18,10 @@ dependencies = ["tinysoundfont>=0.3", "mido>=1.3", "numpy>=1.26"]
 #   pip install -e '.[listen]' && pip install --no-deps 'basic-pitch==0.4.0'
 listen = ["onnxruntime", "librosa", "pretty-midi", "resampy<0.4.3", "mir-eval", "scikit-learn", "scipy",
           "setuptools<81", "yt-dlp"]
+# 耳コピをピアノ専用の書き起こし（Transkun）で（なければ Basic Pitch で写す）。torch は CPU 版でよい：
+#   pip install 'torch==2.11.*' 'torchaudio==2.11.*' --index-url https://download.pytorch.org/whl/cpu
+#   pip install -e '.[cover]'
+cover = ["transkun", "audioop-lts; python_version >= '3.13'"]
 
 [project.urls]
 Homepage = "https://github.com/oyako-li/piano-improv"

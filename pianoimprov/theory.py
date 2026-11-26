@@ -130,6 +130,17 @@ def scale_pitches(tonic: int, minor: bool, lo: int = 36, hi: int = 100) -> list[
     return [p for p in range(lo, hi + 1) if p % 12 in pcs]
 
 
+def chord_scale_pcs(tonic: int, minor: bool, chord: "Chord") -> set[int]:
+    """その和音の上で旋律が歩く音階。曲の調の音階のうち、和音にある調の外の音と半音でぶつかる音を、
+    和音の音に替える（例: B♭ 長調で G♭maj9 なら D・G・A を D♭・G♭・A♭ に。リディアの ♯11 も同じ）。
+    調の中の和音なら、曲の調の音階そのまま。"""
+    pcs = set(scale_pcs(tonic, minor))
+    for x in chord.pcs - pcs:
+        pcs -= {(x + 1) % 12, (x - 1) % 12}
+        pcs.add(x)
+    return pcs | chord.core_pcs
+
+
 def nearest_with_pc(target: int, pcs: set[int], lo: int = 0, hi: int = 127) -> int:
     best, bd = target, 999
     for p in range(max(lo, target - 12), min(hi, target + 12) + 1):

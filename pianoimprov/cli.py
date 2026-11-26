@@ -5,14 +5,17 @@
   piano render -n 2 out.wav 曲を WAV に書き出す（試聴・確認用）
   piano learn a.mid b.mp3 https://youtu.be/...  好きな曲（MIDI・音声・URL）から好みを推定して取り込む
   piano show               いまの好みを表示
+  piano relisten           覚えた曲を今の版の推定で聴き直す
   piano reset              好みを初期値に戻す
+  piano snap               しまった好みと、戻せる日の一覧
+  piano snap save 雨の夜 [--at "2026-11-24 23:00"]  いまの（その時刻の）好みを名前を付けてしまう
+  piano snap load 3 | piano snap load --at "2026-11-24 23:00"  しまった好み・過去の時点の好みを呼び出す
 """
 from __future__ import annotations
 
 import argparse
 import sys
 import threading
-import time
 from pathlib import Path
 
 import numpy as np
@@ -138,6 +141,90 @@ def cmd_learn(a) -> None:
     show_taste(taste)
 
 
+def cmd_relisten(a) -> None:
+    """覚えた曲を、今の版の推定で聴き直す（推定を直したあとに。同じ曲は最後に聴いた 1 回だけが効く）。"""
+    from .listen import listen
+    taste = Taste(DATA)
+    srcs = [r["src"] for r in taste.refs if r.get("src")]
+    if not srcs:
+        print("聴き直す曲がありません")
+        return
+    for src in srcs:
+        print(f"  {src} を聴き直しています…", flush=True)
+        try:
+            e, info = listen(src)
+        except Exception as ex:  # noqa: BLE001
+            print(f"  × {src}: {ex}")
+            continue
+        taste.blend(e, 0.5, {"src": src, "title": info["title"], "bpm": info["bpm"]})
+        print(f"  {info['title'][:40]}（♩={info['bpm']:.0f}）: " + ", ".join(f"{PARAMS[k][0]} {v:.2f}" for k, v in e.items()))
+    show_taste(taste)
+
+
+def _parse_at(text: str | None) -> float | None:
+    if not text:
+        return None
+    from datetime import datetime
+    return datetime.fromisoformat(text).timestamp()
+
+
+def cmd_snap(a) -> None:
+    """好みをしまう・呼び出す。serve が動いていればそこへ頼む（動いている演奏にすぐ効く）。"""
+    import json
+    import time
+    import urllib.request
+    at = _parse_at(a.at)
+
+    def api(path: str, body: dict | None = None):
+        req = urllib.request.Request(f"http://127.0.0.1:{a.port}{path}", method="POST" if body is not None else "GET",
+                                     data=json.dumps(body).encode() if body is not None else None,
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=3) as r:
+            return json.loads(r.read())
+
+    try:
+        api("/api/snapshots")
+        live = True
+    except OSError:
+        live = False
+    fmt = lambda t: time.strftime("%m/%d %H:%M", time.localtime(t)) if t else "初期"  # noqa: E731
+    if a.action == "list":
+        if live:
+            j = api("/api/snapshots")
+        else:
+            from .snapshots import Snapshots
+            j = {"saved": Snapshots(DATA).list(), "history": []}
+        for x in j["saved"]:
+            print(f"  {x['id']:>3}  {x['name']:<24} {fmt(x['upto'])} 時点  評価 {x['n']} 回・曲 {x['refs']}")
+        if not j["saved"]:
+            print("  しまった好みはまだありません（piano snap save 名前）")
+        for h in j["history"][:7]:
+            print(f"       {h['day']} の終わり（piano snap load --at \"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(h['at']))}\"）")
+    elif a.action == "save":
+        name = " ".join(a.args)
+        if live:
+            print(f"  しまいました（id {api('/api/snapshots', {'name': name, 'at': at})['id']}）")
+        else:
+            from .snapshots import Snapshots
+            st = Taste(DATA).state(at)
+            print(f"  しまいました（id {Snapshots(DATA).add(name or fmt(st['ts']) + ' の好み', st)}）")
+    elif a.action == "load":
+        sid = int(a.args[0]) if a.args else None
+        if sid is None and at is None:
+            sys.exit("id か --at を指定してください")
+        if live:
+            j = api("/api/snapshots/load", {"id": sid} if sid is not None else {"at": at})
+            print("  呼び出しました（次のセクションから）" if j.get("ok") else f"  × {j.get('error')}")
+        else:
+            from .snapshots import Snapshots
+            taste = Taste(DATA)
+            st = Snapshots(DATA).get(sid) if sid is not None else taste.state(at)
+            if st is None:
+                sys.exit(f"id {sid} の好みはありません")
+            taste.load(st, st.get("name") or fmt(at) + " の好み")
+            show_taste(taste)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(prog="piano", description="落ち着いて優雅なピアノを即興で弾き続ける AI")
     ap.add_argument("--sf2", default=str(DEFAULT_SF2))
@@ -154,8 +241,14 @@ def main() -> None:
     le = sub.add_parser("learn")
     le.add_argument("files", nargs="+")
     le.add_argument("-w", "--weight", type=float, default=0.5)
+    sub.add_parser("relisten")
     sub.add_parser("show")
     sub.add_parser("reset")
+    sn = sub.add_parser("snap")
+    sn.add_argument("action", nargs="?", default="list", choices=["list", "save", "load"])
+    sn.add_argument("args", nargs="*")
+    sn.add_argument("--at", help='その時刻の好み（例 "2026-11-24 23:00"）')
+    sn.add_argument("--port", type=int, default=8765)
     a = ap.parse_args()
     if a.cmd in (None, "play"):
         cmd_play(a)
@@ -165,13 +258,15 @@ def main() -> None:
         cmd_render(a)
     elif a.cmd == "learn":
         cmd_learn(a)
+    elif a.cmd == "relisten":
+        cmd_relisten(a)
     elif a.cmd == "show":
         show_taste(Taste(DATA))
+    elif a.cmd == "snap":
+        cmd_snap(a)
     elif a.cmd == "reset":
-        p = DATA / "taste.json"
-        if p.exists():
-            p.rename(p.with_suffix(f".{int(time.time())}.bak"))
-        print("好みを初期値に戻しました（前のものは .bak に残しています）")
+        Taste(DATA).reset()
+        print("好みを初期値に戻しました（記録 ratings.jsonl は残しています。reset より前は積み上げに使いません）")
 
 
 if __name__ == "__main__":
