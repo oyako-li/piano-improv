@@ -5,3 +5,4 @@ __pycache__/
 *.wav
 *.egg-info/
 samples/
+/ev.json
