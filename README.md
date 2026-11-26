@@ -5,7 +5,8 @@
 <p align="center"><b>落ち着いて優雅なピアノを、PC でずっと即興で弾き続ける AI。<br>聴きながら「いい」「微妙」と伝えると、だんだん自分の好みに寄っていきます。</b></p>
 
 <p align="center">
-  <a href="https://oyako-li.github.io/piano-improv/"><img src="docs/screen.jpg" alt="Amane の画面" width="760"></a>
+  <a href="https://oyako-li.github.io/piano-improv/"><img src="docs/screen.jpg" alt="Amane の試聴ページ" width="760"></a><br>
+  <sub>試聴ページ。本体と同じ画面の並びで、キャラの代わりにピアノの鍵盤がデモに合わせて動きます</sub>
 </p>
 
 <p align="center">
@@ -86,6 +87,15 @@ three.js と three-vrm は `pianoimprov/web/vendor/` に同梱しているので
 言葉の指示は普段キーワード辞書で読みます。辞書で読めない言い回しをローカル LLM に読ませるには、
 `PIANO_LLM=gemma3:latest .venv/bin/piano play` のように Ollama のモデル名を渡します。
 
+## 試聴ページ
+
+[oyako-li.github.io/piano-improv](https://oyako-li.github.io/piano-improv/) では、インストールせずにデモ演奏を聴けます。
+
+- 本体の画面と同じ並びです：舞台、いまの曲と和音、プレーヤーの帯、右のパネル（チャット・曲・これは何か）
+- 舞台は弾き手の肩越しに見たピアノで、デモの音符に合わせて鍵盤が沈んで光ります（キャラのモデルは公開していません）
+- 舞台のクリックか `Space` で聴く / 止める、進行バーのセクションを押すとそこへ飛びます。チャットには、セクションが変わるたびに Amane の一言が出ます
+- 評価や言葉の指示は、試聴ページではできません。自分の PC で `piano serve` を動かしてください
+
 ## しくみ
 
 ```mermaid
@@ -125,7 +135,8 @@ pianoimprov/
   web/character.html 画面（キャラが弾く・操作もここ）
 tools/get_piano.sh  音源のダウンロード
 tools/*_stats.py, eval_*.py  作曲と推定を数で確かめる道具（form_stats：曲の形、melody_stats：旋律のつながり、eval_listen など：推定の当たり方）
-docs/          説明と試聴ページ（GitHub Pages）
+tools/demo_timeline.py  試聴ページ用に、デモの曲・セクションの時刻と音符を書き出す
+docs/          説明と試聴ページ（GitHub Pages。index.html・demo.mp3 / .mid / .json・three.js の同梱）
 ```
 
 `data/`（自分の好みと評価の記録）と `assets/`（音源）はコミットしません。
@@ -136,7 +147,7 @@ docs/          説明と試聴ページ（GitHub Pages）
 - **曲の形**（`tools/form_stats.py`、音にしてから数える、8 曲）：盛り上がり（音量の山 − 最初の 12 秒）は中央値 +6.4dB。冒頭の主題が後半に戻るのは 8 曲中 7 曲
 - **音声・URL からの推定**（[docs/listen.md](docs/listen.md)）：自作の演奏を MP3 にして数えると、テンポは 72 曲中 68 曲で当たり、盛り上がりの大きさは元の値との相関 0.82。和音の進行は半拍ごとの根音で約 8 割当たります。実際の録音で確かめたのはピアノの 3 曲だけで、歌もの・オーケストラは試していません
 - 短調の多さ・跳躍は、1 曲の音から好みを当てるのに限界があります（同じ曲の MIDI からでも同じくらい外れる）
-- 音楽として好みかどうかは、聴いてみないと分かりません。[試聴ページ](https://oyako-li.github.io/piano-improv/)に、初期設定のままの 3 曲があります
+- 音楽として好みかどうかは、聴いてみないと分かりません。[試聴ページ](https://oyako-li.github.io/piano-improv/)に、v1 が初期設定のまま弾いた 3 曲（7 分 10 秒）があります
 
 ## この先（v2 の候補）
 
