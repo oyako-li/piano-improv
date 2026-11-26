@@ -47,12 +47,12 @@ tools/get_piano.sh                      # 音源（assets/ に約 1.2GB。コミ
 
 ## 試聴ページ（GitHub Pages）
 
-`docs/` を main ブランチから公開しています（`docs/index.html`）。デモを作り直すとき：
+`docs/` を main ブランチから公開しています（`docs/index.html`）。見た目は本体の画面（`pianoimprov/web/character.html`）にそろえ、キャラの代わりに弾き手の肩越しのピアノを three.js（`docs/vendor/three/`）で動かします。キャラのモデルは公開しないので載せません。`docs/screen.jpg` はこのページの画面です（README と OGP 画像に使う）。デモを作り直すとき：
 
 ```bash
 D=$(mktemp -d)
 PIANO_DATA=$D .venv/bin/piano --seed 7 render -n 3 /tmp/demo.wav
 ffmpeg -y -i /tmp/demo.wav -c:a libmp3lame -b:a 160k docs/demo.mp3
 cp /tmp/demo.mid docs/demo.mid
-PIANO_DATA=$D .venv/bin/python tools/demo_timeline.py 7 3 > docs/demo.json   # 曲・セクションの時刻（ページの表示用）
+PIANO_DATA=$D .venv/bin/python tools/demo_timeline.py 7 3 > docs/demo.json   # 曲・セクションの時刻と音符（ページの表示と鍵盤の動き用）
 ```

@@ -2,166 +2,439 @@
 <html lang="ja">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Amane — 試聴</title>
 <meta name="description" content="落ち着いて優雅なピアノをずっと即興で弾き続け、聴き手の好みを学ぶ AI。そのデモ演奏 3 曲。">
 <meta property="og:title" content="Amane — 試聴">
 <meta property="og:description" content="印象派と日本の映画音楽のあいだで、ずっと即興で弾き続けるピアノの AI。デモ演奏 3 曲。">
 <meta property="og:image" content="https://oyako-li.github.io/piano-improv/screen.jpg">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='1.5' fill='%237a5a3c'/%3E%3Cg fill='%23fbf8f3'%3E%3Crect x='2.5' y='4.5' width='2' height='7'/%3E%3Crect x='5.5' y='4.5' width='2' height='7'/%3E%3Crect x='8.5' y='4.5' width='2' height='7'/%3E%3Crect x='11.5' y='4.5' width='2' height='7'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='10' rx='1.5' fill='%230b2236'/%3E%3Cg fill='%238fd3ff'%3E%3Crect x='2.5' y='4.5' width='2' height='7'/%3E%3Crect x='5.5' y='4.5' width='2' height='7'/%3E%3Crect x='8.5' y='4.5' width='2' height='7'/%3E%3Crect x='11.5' y='4.5' width='2' height='7'/%3E%3C/g%3E%3C/svg%3E">
 <style>
+/* 見た目は本体の画面（pianoimprov/web/character.html）にそろえる。ここはデモ演奏を聴くだけの静的なページ */
 :root{
-  --bg:#f5f2ee;--card:#fdfbf8;--text:#2b2420;--muted:#8a7d72;--line:#e4dcd3;--accent:#7a5a3c;--chip:#efe7de;
+  --bg:#060b12;--panel:#0c1520;--panel2:#111d2b;--ink:#e3eef6;--muted:#7f95a8;--line:rgba(150,200,235,.14);
+  --accent:#8fd3ff;--accent2:#c9b6ff;--warm:#ffd9a8;
   --serif:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",Georgia,serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme:dark){:root{
-  --bg:#1a1714;--card:#231f1b;--text:#eae3da;--muted:#a3968a;--line:#3a332c;--accent:#c9a27a;--chip:#2f2924;
-}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:15px/1.7 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
-main{max-width:760px;margin:0 auto;padding:48px 16px 64px}
-h1{font-family:var(--serif);font-weight:400;font-size:34px;letter-spacing:.08em;margin:0}
-.lead{color:var(--muted);margin:8px 0 28px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px}
-.now{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
-.now .title{font-family:var(--serif);font-size:24px}
-.now .meta{color:var(--muted)}
-.chips{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 18px;min-height:30px}
-.chip{border:1px solid var(--line);border-radius:999px;padding:2px 11px;font-size:14px;color:var(--muted);transition:all .2s}
-.chip.on{background:var(--chip);border-color:var(--accent);color:var(--text)}
-.player{display:flex;align-items:center;gap:14px}
-#play{width:52px;height:52px;border-radius:50%;border:1px solid var(--accent);background:transparent;color:var(--accent);font-size:18px;cursor:pointer;flex:none}
-#play:hover{background:var(--chip)}
-.track{flex:1;min-width:0}
-.bar{position:relative;height:28px;cursor:pointer}
-.bar .rail{position:absolute;left:0;right:0;top:12px;height:4px;background:var(--line);border-radius:2px}
-.bar .fill{position:absolute;left:0;top:12px;height:4px;background:var(--accent);border-radius:2px;width:0}
-.bar .mark{position:absolute;top:6px;width:1px;height:16px;background:var(--muted);opacity:.6}
-.time{display:flex;justify-content:space-between;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
-.pieces{list-style:none;padding:0;margin:22px 0 0;display:grid;gap:8px}
-.pieces button{width:100%;text-align:left;font:inherit;color:inherit;background:transparent;border:1px solid var(--line);border-radius:10px;padding:10px 14px;cursor:pointer;display:flex;gap:12px;align-items:baseline}
-.pieces button:hover{border-color:var(--accent)}
-.pieces button.on{border-color:var(--accent);background:var(--chip)}
-.pieces .n{font-family:var(--serif);font-size:18px}
-.pieces .d{color:var(--muted);font-size:13px}
-.pieces .at{margin-left:auto;color:var(--muted);font-size:12px;font-variant-numeric:tabular-nums}
-h2{font-family:var(--serif);font-weight:400;font-size:20px;margin:40px 0 8px}
-p,li{color:var(--text)}
-ul.feat{padding-left:1.2em}
-a{color:var(--accent)}
-.shot{width:100%;border-radius:10px;border:1px solid var(--line);margin-top:8px}
-.links{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
-.links a{border:1px solid var(--accent);border-radius:8px;padding:6px 14px;text-decoration:none}
-footer{margin-top:40px;color:var(--muted);font-size:13px}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,"Hiragino Sans","Noto Sans JP",sans-serif}
+a{color:inherit}
+button{font:inherit;color:inherit}
+.wrap{height:100vh;height:100dvh;max-width:1560px;margin:0 auto;padding:0 20px 14px;display:flex;flex-direction:column}
+.main{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px}
+.col{display:flex;flex-direction:column;min-height:0}
+.top{flex:none;display:flex;align-items:center;gap:14px;padding:12px 0 10px}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(140deg,#14314a,#0a1826);border:1px solid var(--line);display:grid;place-items:center}
+.brand b{white-space:nowrap;font-family:var(--serif);font-weight:400;font-size:20px;letter-spacing:.1em}
+.brand small{display:block;color:var(--muted);font-size:11px;letter-spacing:.08em;margin-top:-2px}
+.spacer{flex:1}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 13px;border-radius:15px;border:1px solid var(--line);background:var(--panel);font-size:12px;text-decoration:none;cursor:pointer}
+.pill:hover{border-color:rgba(150,200,235,.4)}
+.pill.hl{border-color:rgba(143,211,255,.45);color:var(--accent)}
+.stage{position:relative;flex:1;min-height:150px;border-radius:14px;overflow:hidden;background:#061321;border:1px solid var(--line)}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:pointer}
+.corner{position:absolute;width:34px;height:34px;border:2px solid rgba(143,211,255,.55);pointer-events:none}
+.corner.tl{top:14px;left:14px;border-right:0;border-bottom:0}.corner.tr{top:14px;right:14px;border-left:0;border-bottom:0}
+.corner.bl{bottom:14px;left:14px;border-right:0;border-top:0}.corner.br{bottom:14px;right:14px;border-left:0;border-top:0}
+.live{position:absolute;top:24px;left:30px;font:600 12px var(--mono);letter-spacing:.18em;color:var(--ink);display:flex;align-items:center;gap:7px;text-shadow:0 1px 6px #000;pointer-events:none}
+.live i{width:7px;height:7px;border-radius:50%;background:var(--muted)}
+.live.on i{background:#ff6b81;box-shadow:0 0 8px #ff6b81}
+.caster{position:absolute;right:30px;bottom:22px;font-size:12px;color:rgba(227,238,246,.75);text-shadow:0 1px 6px #000;pointer-events:none}
+.start{position:absolute;inset:0;display:grid;place-items:start center;padding-top:14%;background:radial-gradient(ellipse at center,rgba(3,9,16,.15),rgba(3,9,16,.55));cursor:pointer;border:0;width:100%}
+.start[hidden]{display:none}
+.start span{display:inline-flex;align-items:center;gap:12px;font-family:var(--serif);font-size:20px;letter-spacing:.14em;border:1px solid rgba(143,211,255,.4);background:rgba(8,22,36,.6);border-radius:40px;padding:14px 30px;backdrop-filter:blur(6px)}
+.start small{display:block;margin-top:10px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:.06em}
+.stage:fullscreen{border-radius:0;border:0}
+.caption{flex:none;display:flex;align-items:center;gap:16px;flex-wrap:nowrap;overflow:hidden;margin-top:10px;min-height:34px}
+.caption .now{white-space:nowrap}
+.caption .t{font-family:var(--serif);font-size:20px;letter-spacing:.08em}
+.caption .m{color:var(--muted);font-size:12px;margin-left:10px}
+.av{width:34px;height:34px;flex:none;border-radius:50%;background:radial-gradient(circle at 35% 35%,#2b5878,#0b1a28);border:1px solid var(--line);display:grid;place-items:center;font-family:var(--serif);font-size:16px}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;min-width:0}
+.chip{font-size:12px;padding:2px 10px;border-radius:12px;background:var(--panel);border:1px solid var(--line);color:var(--muted);transition:all .25s;white-space:nowrap}
+.chip.on{color:var(--ink);border-color:rgba(143,211,255,.6);background:rgba(20,50,72,.75)}
+.player{flex:none;display:flex;align-items:center;gap:12px;margin-top:8px}
+.play{width:48px;height:48px;border-radius:50%;border:0;background:var(--accent);color:#06121e;display:grid;place-items:center;cursor:pointer;flex:none}
+.play:hover{filter:brightness(1.08)}
+.vol{display:flex;align-items:center;gap:6px;color:var(--muted)}
+.vol input{width:80px;accent-color:var(--accent)}
+.prog{flex:1;min-width:120px}
+.prog .parts{display:flex;gap:3px;height:6px;cursor:pointer}
+.prog .parts span{border-radius:3px;background:rgba(150,200,235,.14);position:relative;overflow:hidden}
+.prog .parts span.done{background:rgba(143,211,255,.45)}
+.prog .parts span i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:3px}
+.prog .parts span.gap{flex:none;width:8px;background:none}
+.prog .lbl{display:flex;justify-content:space-between;color:var(--muted);font:11px var(--mono);margin-top:6px}
+.prog .lbl span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prog .lbl span+span{flex:none;margin-left:8px}
+.icon{width:36px;height:36px;border-radius:10px;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center;cursor:pointer;color:var(--muted);text-decoration:none}
+.icon:hover{color:var(--ink);border-color:rgba(150,200,235,.45)}
+.side{display:flex;flex-direction:column;min-height:0;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.tabs{flex:none;display:flex;align-items:center;gap:2px;padding:8px 10px;border-bottom:1px solid var(--line)}
+.tabs button{background:none;border:0;padding:4px 10px;border-radius:8px;color:var(--muted);cursor:pointer;font-size:13px;white-space:nowrap}
+.tabs button:hover{color:var(--ink)}
+.tabs button.on{color:var(--ink);background:var(--panel2)}
+.pane{display:none;flex:1;min-height:0;overflow:auto;padding:10px 14px}
+.pane.on{display:flex;flex-direction:column;gap:10px}
+.pane.chat.on{overflow:hidden;justify-content:flex-end;gap:0;-webkit-mask-image:linear-gradient(transparent,#000 48px);mask-image:linear-gradient(transparent,#000 48px)}
+.log{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.log li{font-size:13px;line-height:1.55;overflow-wrap:anywhere}
+.log time{color:var(--muted);font:11px var(--mono);margin-right:7px}
+.log b{font-weight:600;margin-right:7px;color:var(--accent)}
+.log .sys{color:var(--muted);font-size:12px}
+.pieces{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.pieces button{width:100%;text-align:left;background:var(--panel2);border:1px solid transparent;border-radius:10px;padding:9px 12px;cursor:pointer;display:grid;grid-template-columns:auto 1fr auto;gap:2px 10px;align-items:baseline}
+.pieces button:hover{border-color:rgba(150,200,235,.35)}
+.pieces button.on{border-color:rgba(143,211,255,.6)}
+.pieces .n{font-family:var(--serif);font-size:16px}
+.pieces .d{color:var(--muted);font-size:12px}
+.pieces .at{color:var(--muted);font:11px var(--mono)}
+.pieces .form{grid-column:1/-1;color:var(--muted);font-size:11px}
+.about p,.about li{font-size:13px;line-height:1.7;margin:0}
+.about ul{margin:0;padding-left:1.1em;display:grid;gap:6px}
+.about h3{font-family:var(--serif);font-weight:400;font-size:15px;margin:6px 0 0;letter-spacing:.06em}
+.about pre{margin:0;background:#081019;border:1px solid var(--line);border-radius:8px;padding:8px 10px;font:11.5px/1.6 var(--mono);overflow-x:auto;color:var(--ink)}
+.about .note{color:var(--muted);font-size:12px}
+.foot{flex:none;padding:10px 14px 12px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;display:flex;gap:8px;align-items:center}
+.foot a.go{margin-left:auto;flex:none;height:34px;display:inline-flex;align-items:center;padding:0 14px;border-radius:17px;border:1px solid rgba(143,211,255,.45);background:var(--panel2);color:var(--accent);text-decoration:none;font-size:13px}
+.credit{color:var(--muted);font-size:11px;line-height:1.6}
+@media (max-width:900px){
+  html,body{overflow:auto}
+  .wrap{height:auto;min-height:100dvh}
+  .main{flex:none;grid-template-columns:minmax(0,1fr);gap:14px}
+  .stage{flex:none;height:min(62vw,52dvh)}
+  .side{height:auto}
+  .pane{overflow:visible}
+  .pane.chat.on{height:180px}
+}
+@media (max-width:760px){
+  .wrap{padding:0 12px 10px}
+  .caption .chips{display:none}
+  .caption{min-height:28px;margin-top:8px}
+  .caption .t{font-size:17px}
+  .vol{display:none}
+  .play{width:42px;height:42px}
+  .corner,.caster,.brand small{display:none}
+  .brand b{font-size:17px;letter-spacing:.06em}
+  .top{gap:8px}
+  .start{padding-top:8%}
+  .start span{font-size:16px;padding:10px 22px}
+}
 </style>
+<script type="importmap">
+{"imports": {"three": "./vendor/three/three.module.min.js"}}
+</script>
 </head>
 <body>
-<main>
-  <h1>Amane</h1>
-  <p class="lead">落ち着いて優雅なピアノを、ずっと即興で弾き続ける AI。<br>聴きながら「いい」「微妙」と伝えると、だんだん好みに寄っていきます。</p>
+<div class="wrap">
+  <header class="top">
+    <a class="brand" href="./">
+      <span class="logo"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="10" rx="1.5" fill="none" stroke="#8fd3ff" stroke-width="1.2"/><g fill="#8fd3ff"><rect x="4" y="3.5" width="1.4" height="5"/><rect x="7.3" y="3.5" width="1.4" height="5"/><rect x="10.6" y="3.5" width="1.4" height="5"/></g></svg></span>
+      <span><b>Amane</b><small>あなたのために、ずっと即興で</small></span>
+    </a>
+    <span class="spacer"></span>
+    <a class="pill" href="demo.mid" download>MIDI</a>
+    <a class="pill hl" href="https://github.com/oyako-li/piano-improv">GitHub で動かす</a>
+  </header>
 
-  <section class="card" aria-label="デモ演奏">
-    <div class="now"><span class="title" id="title">デモ演奏 3 曲</span><span class="meta" id="meta">初期設定のまま・約 6 分</span></div>
-    <div class="chips" id="chips"></div>
-    <div class="player">
-      <button id="play" aria-label="再生">▶</button>
-      <div class="track">
-        <div class="bar" id="bar"><div class="rail"></div><div class="fill" id="fill"></div></div>
-        <div class="time"><span id="cur">0:00</span><span id="dur">0:00</span></div>
-      </div>
-    </div>
-    <ul class="pieces" id="pieces"></ul>
-    <audio id="audio" src="demo.mp3" preload="metadata"></audio>
+  <div class="main">
+  <div class="col">
+  <section class="stage" id="stage" aria-label="デモ演奏">
+    <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+    <div class="live" id="live"><i></i>DEMO</div>
+    <div class="caster">初期設定のまま・3 曲</div>
+    <button class="start" id="start" aria-label="聴く"><div><span>▶ 聴く</span><small>デモ演奏 3 曲・約 7 分</small></div></button>
   </section>
-
-  <h2>これは何か</h2>
-  <ul class="feat">
-    <li>印象派（サティ・ドビュッシー的な平行和音・揺れる maj7）と、日本の映画音楽系（王道進行・カノン風の下降バス・ヨナ抜き）のあいだで、曲を次々に作って弾き続けます</li>
-    <li>好みは、テンポ・余白・和音の色彩・短調の多さなど 17 個の値。少しずつずらしながら弾き、「いい」と言われた方へ寄せていきます</li>
-    <li>言葉（「もっと静かに」「雨の夜っぽく」）や、好きな曲の MIDI でも教えられます</li>
-    <li>作曲は音楽理論のルールと乱数。GPU はいりません。音は Salamander Grand Piano</li>
-  </ul>
-  <p>このページの 3 曲は、まだ何も教えていない初期設定で弾いたものです。自分の PC で動かすと、ブラウザから評価や言葉の指示ができます。</p>
-  <img class="shot" src="screen.jpg" alt="操作画面：いまの曲・和音・評価ボタン・言葉の指示・好みのスライダー" loading="lazy">
-  <div class="links">
-    <a href="https://github.com/oyako-li/piano-improv">GitHub で見る・動かす</a>
-    <a href="demo.mid" download>この 3 曲の MIDI</a>
+  <div class="caption">
+    <div class="av" title="Amane">天</div>
+    <div class="now"><span class="t" id="title">Amane</span><span class="m" id="meta">デモ演奏 3 曲</span></div>
+    <div class="chips" id="chips"></div>
+  </div>
+  <div class="player">
+    <button class="play" id="play" aria-label="聴く"><svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M7 4.5v15l13-7.5z"/></svg></button>
+    <label class="vol" title="音量"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3 10v4h4l5 4V6L7 10H3zm13.5 2a4.5 4.5 0 0 0-2.5-4v8a4.5 4.5 0 0 0 2.5-4z"/></svg><input type="range" id="vol" min="0" max="1" step="0.01" value="1"></label>
+    <div class="prog"><div class="parts" id="parts" title="クリックでその場所へ"></div><div class="lbl"><span id="partLbl">—</span><span id="tc">0:00 / 0:00</span></div></div>
+    <button class="icon" id="full" title="全画面" aria-label="全画面"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+  </div>
+  <audio id="audio" src="demo.mp3" preload="metadata"></audio>
   </div>
 
-  <footer>
-    ピアノの音：Salamander Grand Piano（Alexander Holm, CC BY 3.0）・プログラム：MIT License
-  </footer>
-</main>
-<script>
+  <aside class="side" aria-label="デモの説明">
+    <div class="tabs" role="tablist">
+      <button class="on" data-pane="chat" role="tab">チャット</button>
+      <button data-pane="pieces" role="tab">曲</button>
+      <button data-pane="about" role="tab">これは何か</button>
+    </div>
+    <div class="pane chat on" id="pane-chat"><ul class="log" id="log"></ul></div>
+    <div class="pane" id="pane-pieces">
+      <p class="credit">まだ何も教えていない、初期設定のままで弾いた 3 曲です。押すとその曲から聴けます。</p>
+      <ul class="pieces" id="pieces"></ul>
+    </div>
+    <div class="pane about" id="pane-about">
+      <p>落ち着いて優雅なピアノを、PC でずっと即興で弾き続ける AI です。聴きながら「いい」「微妙」と伝えると、だんだん自分の好みに寄っていきます。</p>
+      <ul>
+        <li>印象派（平行和音・揺れる maj7）と、日本の映画音楽系（王道進行・カノン風の下降バス・ヨナ抜き）のあいだで、曲を次々に作って弾きます</li>
+        <li>1 曲ごとに起承転結があり、サビで盛り上がって主題に戻ります。盛り上がりの大きさも好みのうちです</li>
+        <li>好みは評価・言葉（「もっと静かに」「雨の夜っぽく」）・好きな曲の URL や MIDI で教えられます</li>
+        <li>作曲は音楽理論のルールと乱数。GPU はいりません。音は Salamander Grand Piano</li>
+      </ul>
+      <h3>自分の PC で動かす</h3>
+      <pre>git clone https://github.com/oyako-li/piano-improv.git
+cd piano-improv
+python3 -m venv .venv && .venv/bin/pip install -e .
+tools/get_piano.sh
+.venv/bin/piano serve   # http://127.0.0.1:8765/</pre>
+      <p class="note">本体の画面はこのページと同じ並びで、右のチャットから評価や言葉の指示ができます。自分で用意した VRM のキャラクターを置くと、ピアノの前に座って弾きます（キャラはこのリポジトリに入っていません）。</p>
+      <p class="credit">ピアノの音：Salamander Grand Piano（Alexander Holm, CC BY 3.0）・演奏の MIDI：CC0・プログラム：MIT License</p>
+    </div>
+    <div class="foot"><span>評価と言葉の指示は、手元で動かすとできます</span><a class="go" href="https://github.com/oyako-li/piano-improv">GitHub</a></div>
+  </aside>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
 const $ = s => document.querySelector(s);
-const audio = $("#audio");
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x)), lerp = (a, b, k) => a + (b - a) * k;
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
 const fmt = t => `${Math.floor(t / 60)}:${String(Math.floor(t % 60)).padStart(2, "0")}`;
-const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const PART = {intro: "イントロ", A: "A", "A'": "A′", B: "B", outro: "アウトロ"};
-let secs = [], pieces = [], cur = -1;
+const PART = { intro: "イントロ", outro: "アウトロ", "A'": "A′", "B'": "B′", S: "サビ", "S'": "サビ′" };
+const partName = p => PART[p] ?? p;
+const audio = $("#audio");
 
-function sectionAt(t) {
-  let i = -1;
-  for (let k = 0; k < secs.length; k++) if (secs[k].t <= t) i = k;
-  return i;
-}
-function show(i) {
-  if (i === cur) return;
-  cur = i;
-  const s = secs[i];
-  if (!s) return;
-  $("#title").textContent = `曲 ${s.piece} ・ ${PART[s.part] ?? s.part}`;
-  $("#meta").textContent = `${s.key} ・ ${s.meter}/4 ・ ♩=${s.bpm}`;
-  $("#chips").innerHTML = s.chords.map(c => `<span class="chip">${esc(c)}</span>`).join("");
-  document.querySelectorAll(".pieces button").forEach(b => b.classList.toggle("on", +b.dataset.piece === s.piece));
-}
-function chordTick(t) {
-  const s = secs[cur];
-  if (!s) return;
-  const end = secs[cur + 1]?.t ?? audio.duration;
-  const k = Math.min(s.chords.length - 1, Math.floor((t - s.t) / ((end - s.t) / s.chords.length)));
-  document.querySelectorAll("#chips .chip").forEach((c, j) => c.classList.toggle("on", j === k));
-}
-function tick() {
-  const t = audio.currentTime, d = audio.duration || 0;
-  $("#cur").textContent = fmt(t);
-  $("#fill").style.width = d ? `${t / d * 100}%` : 0;
-  show(Math.max(0, sectionAt(t)));
-  chordTick(t);
-}
-function marks() {
-  const d = audio.duration;
-  if (!d) return;
-  $("#dur").textContent = fmt(d);
-  $("#bar").querySelectorAll(".mark").forEach(m => m.remove());
-  for (const p of pieces.slice(1)) {
-    const m = document.createElement("div");
-    m.className = "mark"; m.style.left = `${p.t / d * 100}%`;
-    $("#bar").appendChild(m);
+/* ================================================================ 曲と音符（demo.json） */
+let secs = [], notes = [], pieces = [], END = 0;
+const data = fetch("demo.json").then(r => r.json()).then(j => {
+  END = j.sections.at(-1).t;
+  secs = j.sections.filter(s => !s.end).map((s, i, a) => ({ ...s, end: a[i + 1]?.t ?? END }));
+  notes = j.notes;
+  for (const s of secs) {
+    let p = pieces.find(p => p.piece === s.piece);
+    if (!p) pieces.push(p = { piece: s.piece, t: s.t, key: s.key, meter: s.meter, bpm: s.bpm, parts: [] });
+    p.parts.push(s.part); p.end = s.end;
   }
+  $("#pieces").innerHTML = pieces.map(p => `<li><button data-t="${p.t}" data-piece="${p.piece}">
+    <span class="n">曲 ${p.piece}</span><span class="d">${esc(p.key)} ・ ${p.meter}/4 ・ ♩=${p.bpm}</span><span class="at">${fmt(p.t)}</span>
+    <span class="form">${p.parts.map(partName).join(" → ")}</span></button></li>`).join("");
+  document.querySelectorAll(".pieces button").forEach(b => b.onclick = () => seek(+b.dataset.t));
+  say("曲を弾く準備ができました。「▶ 聴く」で始めます", 0, true);
+});
+const secAt = t => secs.findLast(s => s.t <= t) || secs[0];
+
+/* ================================================================ 再生 */
+const PLAY = '<path d="M7 4.5v15l13-7.5z"/>', PAUSE = '<path d="M6 4h4v16H6zM14 4h4v16h-4z"/>';
+function setPlaying(on) {
+  $("#playIcon").innerHTML = on ? PAUSE : PLAY;
+  $("#play").setAttribute("aria-label", on ? "止める" : "聴く");
+  $("#live").classList.toggle("on", on);
+  if (on) $("#start").hidden = true;
+}
+const toggle = () => audio.paused ? audio.play() : audio.pause();
+function seek(t) { audio.currentTime = t; lastSec = null; audio.play(); }
+audio.onplay = () => { if (audio.currentTime < 1) lastSec = null; setPlaying(true); };
+audio.onpause = () => setPlaying(false);
+audio.onended = () => { setPlaying(false); say("3 曲おわりです。手元で動かすと、ずっと弾き続けます", END, true); };
+$("#start").onclick = () => audio.play();
+$("#play").onclick = toggle;
+$("#stage").addEventListener("click", e => { if (!e.target.closest("button,a,input")) toggle(); });
+$("#vol").oninput = e => { audio.volume = +e.target.value; };
+$("#full").onclick = () => document.fullscreenElement ? document.exitFullscreen() : $("#stage").requestFullscreen?.();
+addEventListener("keydown", e => {
+  if (e.key === " ") { e.preventDefault(); toggle(); }
+  else if (e.key === "f") $("#full").click();
+});
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => {
+  document.querySelectorAll(".tabs button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll(".pane").forEach(x => x.classList.toggle("on", x.id === `pane-${b.dataset.pane}`));
+});
+
+/* ================================================================ チャット（セクションが変わるたびに一言） */
+function say(text, t, sys = false) {
+  const li = document.createElement("li");
+  if (sys) li.className = "sys";
+  li.innerHTML = `<time>${fmt(t)}</time>${sys ? "" : "<b>Amane</b>"}${esc(text)}`;
+  $("#log").append(li);
+  while ($("#log").children.length > 40) $("#log").firstElementChild.remove();
+}
+const LINES = {
+  intro: s => `曲 ${s.piece}、${s.key}・${s.meter}/4・♩=${s.bpm} で始めます`,
+  A: () => "主題です", "A'": () => "主題を、少し形を変えてもう一度",
+  B: s => s.key === pieces.find(p => p.piece === s.piece)?.key ? "ここで少し景色を変えます" : `${s.key} へ移って、景色を変えます`,
+  S: () => "ここがいちばん高いところ", "S'": () => "もう一度、さっきより強く",
+  outro: () => "静かに閉じます",
+};
+
+/* ================================================================ 表示 */
+let lastSec = null;
+function showNow(t) {
+  const s = secAt(t);
+  if (!s) return;
+  if (s !== lastSec) {
+    if (!audio.paused && Math.abs(t - s.t) < 2) say((LINES[s.part] || (() => partName(s.part)))(s), s.t);
+    lastSec = s;
+    $("#title").textContent = `曲 ${s.piece} ・ ${partName(s.part)}`;
+    $("#meta").textContent = `${s.key} ・ ${s.meter}/4 ・ ♩=${s.bpm}`;
+    $("#chips").innerHTML = s.chords.map(c => `<span class="chip">${esc(c)}</span>`).join("");
+    const p = pieces.find(p => p.piece === s.piece);
+    $("#parts").innerHTML = secs.filter(x => x.piece === s.piece)
+      .map(x => `<span data-t="${x.t}" style="flex:${x.end - x.t}" title="${partName(x.part)}"><i></i></span>`).join("");
+    $("#parts").querySelectorAll("span").forEach(el => el.onclick = () => seek(+el.dataset.t));
+    document.querySelectorAll(".pieces button").forEach(b => b.classList.toggle("on", +b.dataset.piece === s.piece));
+    $("#partLbl").textContent = `曲 ${s.piece} ・ ${p.parts.map(partName).join(" ")}`;
+  }
+  const k = Math.min(s.chords.length - 1, Math.floor((t - s.t) / ((s.end - s.t) / s.chords.length)));
+  document.querySelectorAll("#chips .chip").forEach((c, j) => c.classList.toggle("on", j === k));
+  $("#parts").querySelectorAll("span").forEach(el => {
+    const a = +el.dataset.t, x = secs.find(q => q.t === a);
+    el.classList.toggle("done", x.end <= t);
+    el.firstChild.style.width = x.t <= t && t < x.end ? `${(t - x.t) / (x.end - x.t) * 100}%` : "0";
+  });
+  $("#tc").textContent = `${fmt(t)} / ${fmt(audio.duration || END)}`;
 }
 
-fetch("demo.json").then(r => r.json()).then(j => {
-  secs = j;
-  for (const s of secs) if (!pieces.some(p => p.piece === s.piece)) pieces.push({piece: s.piece, t: s.t, key: s.key, meter: s.meter, bpm: s.bpm});
-  $("#pieces").innerHTML = pieces.map(p => `<li><button data-piece="${p.piece}" data-t="${p.t}">
-    <span class="n">曲 ${p.piece}</span><span class="d">${esc(p.key)} ・ ${p.meter}/4 ・ ♩=${p.bpm}</span><span class="at">${fmt(p.t)}</span></button></li>`).join("");
-  document.querySelectorAll(".pieces button").forEach(b => b.onclick = () => { audio.currentTime = +b.dataset.t; audio.play(); });
-  marks();
-});
+/* ================================================================ 舞台：弾き手の肩越しに見るピアノ */
+const stage = $("#stage");
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x061321);
+scene.fog = new THREE.FogExp2(0x061321, 0.2);
+const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 30);
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h;
+  // 鍵盤の真ん中 5 オクターブほどが横に収まるよう、細い画面では引く
+  const base = 16 / 9, fov0 = 24;
+  camera.fov = camera.aspect >= base ? fov0 : 2 * Math.atan(Math.tan(fov0 * Math.PI / 360) * base / camera.aspect) * 180 / Math.PI;
+  camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage); resize();
 
-$("#play").onclick = () => audio.paused ? audio.play() : audio.pause();
-audio.onplay = () => { $("#play").textContent = "❚❚"; $("#play").setAttribute("aria-label", "一時停止"); };
-audio.onpause = () => { $("#play").textContent = "▶"; $("#play").setAttribute("aria-label", "再生"); };
-audio.ontimeupdate = tick;
-audio.onloadedmetadata = marks;
-$("#bar").onclick = e => {
-  const r = e.currentTarget.getBoundingClientRect();
-  if (audio.duration) audio.currentTime = (e.clientX - r.left) / r.width * audio.duration;
-};
-document.addEventListener("keydown", e => {
-  if (e.code === "Space" && e.target === document.body) { e.preventDefault(); $("#play").click(); }
-});
+scene.add(new THREE.HemisphereLight(0x5d8fb8, 0x05080c, 0.6));
+const key = new THREE.DirectionalLight(0xbfdcff, 1.1); key.position.set(1.2, 2.6, -1.5); scene.add(key);
+const rim = new THREE.DirectionalLight(0x4fb8ff, 1.2); rim.position.set(-1.5, 2.0, 2.5); scene.add(rim);
+const glow = new THREE.PointLight(0x7fd8ff, 0.5, 2.2, 1.6); glow.position.set(0, 0.95, 0.3); scene.add(glow);
+const floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ color: 0x0a1824, roughness: 0.35, metalness: 0.2 }));
+floor.rotation.x = -Math.PI / 2; scene.add(floor);
+const pipeMat = new THREE.MeshStandardMaterial({ color: 0x1b2f3a, roughness: 0.6, metalness: 0.5 });
+for (const [x, z, r] of [[-1.7, 2.0, 0.09], [-1.2, 2.6, 0.06], [1.6, 2.3, 0.1], [2.2, 1.6, 0.07]]) {
+  const p = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 6, 16), pipeMat); p.position.set(x, 3, z); scene.add(p);
+}
+
+// ピアノ（本体の画面と同じ寸法）。弾き手は +Z を向いて座るので、低い音は +X（こちらから見て左）
+const KEY_W = 0.0235, KEY_TOP = 0.74, KEY_Z = 0.33;
+const isBlack = p => [1, 3, 6, 8, 10].includes(((p % 12) + 12) % 12);
+const whiteIndex = p => { let n = 0; for (let q = 21; q < p; q++) if (!isBlack(q)) n++; return n; };
+const MID = whiteIndex(60) + 0.5;
+const keyX = p => isBlack(p) ? (MID - whiteIndex(p)) * KEY_W : (MID - whiteIndex(p) - 0.5) * KEY_W;
+const lacquer = new THREE.MeshStandardMaterial({ color: 0x121a22, roughness: 0.22, metalness: 0.5 });
+const W = KEY_W * 52 + 0.08;
+const body = new THREE.Mesh(new THREE.BoxGeometry(W, 0.05, 0.27), lacquer); body.position.set(0, KEY_TOP - 0.035, KEY_Z + 0.005); scene.add(body);
+const back = new THREE.Mesh(new THREE.BoxGeometry(W, 0.11, 0.04), lacquer); back.position.set(0, KEY_TOP + 0.03, KEY_Z + 0.11); scene.add(back);
+for (const sx of [-1, 1]) {
+  const leg = new THREE.Mesh(new THREE.BoxGeometry(0.03, 2, 0.22), lacquer);
+  leg.position.set(sx * (KEY_W * 26 + 0.025), KEY_TOP - 0.06 - 1, KEY_Z + 0.005); scene.add(leg);
+}
+const trim = new THREE.MeshStandardMaterial({ color: 0x8fa9bd, roughness: 0.25, metalness: 0.9 });
+for (const [y, z] of [[KEY_TOP + 0.086, KEY_Z + 0.09], [KEY_TOP - 0.01, KEY_Z - 0.131]]) {
+  const t = new THREE.Mesh(new THREE.BoxGeometry(W + 0.004, 0.004, 0.004), trim); t.position.set(0, y, z); scene.add(t);
+}
+const felt = new THREE.Mesh(new THREE.BoxGeometry(KEY_W * 52, 0.006, 0.012), new THREE.MeshStandardMaterial({ color: 0x5a0f18, roughness: 0.9 }));
+felt.position.set(0, KEY_TOP + 0.006, KEY_Z + 0.082); scene.add(felt);
+const line = new THREE.Mesh(new THREE.BoxGeometry(W * 0.8, 0.003, 0.002), new THREE.MeshBasicMaterial({ color: 0x58c8ff, transparent: true, opacity: 0.5 }));
+line.position.set(0, KEY_TOP + 0.05, KEY_Z + 0.089); scene.add(line);
+const keys = new Map();
+for (let p = 21; p <= 108; p++) {
+  const black = isBlack(p);
+  const mat = new THREE.MeshStandardMaterial({ color: black ? 0x101418 : 0xe8eef2, roughness: black ? 0.35 : 0.5, emissive: 0x58c8ff, emissiveIntensity: 0 });
+  const geo = black ? new THREE.BoxGeometry(KEY_W * 0.55, 0.018, 0.09) : new THREE.BoxGeometry(KEY_W * 0.94, 0.02, 0.15);
+  geo.translate(0, 0, black ? -0.045 : -0.075);
+  const m = new THREE.Mesh(geo, mat);
+  m.position.set(keyX(p), KEY_TOP + (black ? 0.014 : 0), KEY_Z + 0.075);
+  scene.add(m);
+  keys.set(p, { mesh: m, mat, black, down: 0, lit: 0 });
+}
+
+// 雨と、音の光
+function dotTexture() {
+  const c = document.createElement("canvas"); c.width = c.height = 64;
+  const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  r.addColorStop(0, "rgba(255,255,255,1)"); r.addColorStop(0.3, "rgba(200,235,255,.6)"); r.addColorStop(1, "rgba(200,235,255,0)");
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+  return new THREE.CanvasTexture(c);
+}
+const DOT = dotTexture();
+const RAIN = 600, rainPos = new Float32Array(RAIN * 3), rainSpeed = new Float32Array(RAIN);
+for (let i = 0; i < RAIN; i++) { rainPos[i * 3] = (Math.random() - 0.5) * 6; rainPos[i * 3 + 1] = Math.random() * 4; rainPos[i * 3 + 2] = Math.random() * 4.2 - 0.5; rainSpeed[i] = 0.35 + Math.random() * 0.5; }
+const rainGeo = new THREE.BufferGeometry(); rainGeo.setAttribute("position", new THREE.BufferAttribute(rainPos, 3));
+scene.add(new THREE.Points(rainGeo, new THREE.PointsMaterial({ size: 0.025, map: DOT, color: 0x9fdcff, transparent: true, opacity: 0.5, depthWrite: false, blending: THREE.AdditiveBlending })));
+const MOTES = 160, motePos = new Float32Array(MOTES * 3), moteLife = new Float32Array(MOTES), moteVel = new Float32Array(MOTES * 3);
+let moteNext = 0;
+for (let i = 0; i < MOTES; i++) motePos[i * 3 + 1] = -10;
+const moteGeo = new THREE.BufferGeometry(); moteGeo.setAttribute("position", new THREE.BufferAttribute(motePos, 3));
+scene.add(new THREE.Points(moteGeo, new THREE.PointsMaterial({ size: 0.03, map: DOT, color: 0x8fe0ff, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending })));
+function spawnMote(x, vel) {
+  const i = moteNext++ % MOTES;
+  motePos[i * 3] = x; motePos[i * 3 + 1] = KEY_TOP + 0.02; motePos[i * 3 + 2] = KEY_Z;
+  moteVel[i * 3] = (Math.random() - 0.5) * 0.03; moteVel[i * 3 + 1] = 0.08 + vel / 127 * 0.12; moteVel[i * 3 + 2] = (Math.random() - 0.3) * 0.04;
+  moteLife[i] = 2.5 + Math.random() * 1.5;
+}
+
+/* ================================================================ 動き */
+let camX = 0, energy = 0, lastT = 0, seen = new Set(), ni = 0;
+function update(dt, time) {
+  const t = audio.currentTime;
+  if (t < lastT - 0.5 || t > lastT + 2) { ni = 0; seen.clear(); }   // 前後に飛んだら数え直す
+  lastT = t;
+  while (ni < notes.length && notes[ni][0] < t - 8) ni++;
+  const pressed = new Map(); let sum = 0, cnt = 0;
+  for (let i = ni; i < notes.length && notes[i][0] < t + 0.1; i++) {
+    const [t0, dur, p, vel] = notes[i], age = t - t0;
+    if (age >= 0 && age < Math.min(dur, 0.45)) pressed.set(p, vel);
+    if (age > -0.5 && age < 2) { sum += keyX(p); cnt++; }
+    const id = `${t0}:${p}`;
+    if (!audio.paused && age >= 0 && age < 0.12 && !seen.has(id)) {
+      seen.add(id);
+      energy = Math.min(1.5, energy + vel / 127 * 0.35);
+      if (Math.random() < 0.6) spawnMote(keyX(p), vel);
+      const k = keys.get(p); if (k) k.lit = Math.max(k.lit, 0.4 + vel / 127);
+    }
+  }
+  if (seen.size > 3000) seen.clear();
+  for (const [p, k] of keys) {
+    const want = pressed.has(p) ? 1 : 0;
+    k.down = lerp(k.down, want, clamp(dt * (want ? 40 : 14), 0, 1));
+    k.mesh.rotation.x = -k.down * 0.06;
+    k.lit = Math.max(0, k.lit - dt * 0.9);
+    k.mat.emissiveIntensity = k.lit * (k.black ? 0.9 : 0.45);
+  }
+  energy = Math.max(0, energy - dt * 0.8);
+  glow.intensity = 0.3 + energy * 1.1;
+  // カメラは弾いている音域へゆっくり寄る（肩越し）
+  camX = lerp(camX, cnt ? clamp(sum / cnt, -0.25, 0.25) : 0, clamp(dt * 0.4, 0, 1));
+  camera.position.set(camX * 0.5 + Math.sin(time * 0.11) * 0.03, 1.6, -1.2);
+  camera.lookAt(camX * 0.4, KEY_TOP - 0.1, KEY_Z + 0.1);
+  glow.position.x = camX;
+  for (let i = 0; i < RAIN; i++) { rainPos[i * 3 + 1] -= rainSpeed[i] * dt; if (rainPos[i * 3 + 1] < 0) rainPos[i * 3 + 1] += 4; }
+  rainGeo.attributes.position.needsUpdate = true;
+  for (let i = 0; i < MOTES; i++) {
+    if (moteLife[i] <= 0) continue;
+    moteLife[i] -= dt;
+    for (let a = 0; a < 3; a++) motePos[i * 3 + a] += moteVel[i * 3 + a] * dt;
+    if (moteLife[i] <= 0) motePos[i * 3 + 1] = -10;
+  }
+  moteGeo.attributes.position.needsUpdate = true;
+  if (secs.length) showNow(t);
+}
+let prev = performance.now();
+renderer.setAnimationLoop(now => { const dt = Math.min((now - prev) / 1000, 0.1); prev = now; update(dt, now / 1000); renderer.render(scene, camera); });
 </script>
 </body>
 </html>
